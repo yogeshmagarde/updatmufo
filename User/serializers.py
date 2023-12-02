@@ -97,7 +97,8 @@ class SnapchatLoginSerializer(serializers.ModelSerializer):
 class CoinsclaimSerializer(serializers.ModelSerializer):
     class Meta:
         model = claim_coins
-        fields = ('claim_coins','created_at')
+        # fields = ('claim_coins','created_at')
+        fields = ('claim_coins','created_date')
 
 
 

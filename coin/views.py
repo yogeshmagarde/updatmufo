@@ -446,11 +446,11 @@ class UserTransactionHistoryView(APIView):
 
                 elif isinstance(transaction, claim_coins):
                     transaction_type = "Received from_today_claim"
-                    from_room = "Bonus coins"
+                    from_claim = "Bonus coins"
                     amount=10
                     data = {
                     "transaction_type": transaction_type,
-                    "from_join_room": from_room,
+                    "today_claim": from_claim,
                     "amount": amount,  
                     "created_date": transaction.created_date
                     }

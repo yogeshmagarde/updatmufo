@@ -35,7 +35,7 @@ from rest_framework import filters
 from master.serializers import *
 from master.models import *
 import uuid
-
+from datetime import datetime
 
 def Users(request):
     return HttpResponse("Hello, world. You're at the User index.")
@@ -461,15 +461,19 @@ class Coinsclaim(APIView):
         serialiser = self.serialiser_class(data = request.data)
         if serialiser .is_valid():
             claim = serialiser.initial_data.get('claim_coins')
-            created_at = serialiser.initial_data.get('created_at')
+            # created_at = serialiser.initial_data.get('created_at')
+            created_at = datetime.today()#datetime.today()
+            print('created_at',created_at)
             if claim:
-                today_claimed_count = claim_coins.objects.filter(user=request.user,created_at=created_at).count()
+                today_claimed_count = claim_coins.objects.filter(
+                    user=request.user,
+                    created_date__date=created_at.date()).count()
                 print(today_claimed_count)
                 if today_claimed_count==0:
                     user = User.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
-                    claim_coins.objects.create(user=request.user,created_at=created_at, claim_coins=True)
+                    claim_coins.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
             return Response({"data":"data"})

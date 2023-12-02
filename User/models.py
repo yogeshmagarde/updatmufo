@@ -49,8 +49,8 @@ class Social_media(models.Model):
 class claim_coins(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     claim_coins = models.BooleanField(default=False)
-    created_at = models.CharField(max_length=100)
-    # created_date = models.DateTimeField(default=now)
+    # created_at = models.CharField(max_length=100)
+    created_date = models.DateTimeField(default=now)
 
     def __str__(self):
         return str(self.user)

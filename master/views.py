@@ -112,7 +112,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today=Follow_claim_coins.objects.filter(user=request.user,created_at=date).count()
                                 print(today,"hello")
-                                if today_follow_user == 10 and today < 1:
+                                if today_follow_user == 5 and today < 1:
                                     print("10 user complite")
                                     user_profile = User.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")

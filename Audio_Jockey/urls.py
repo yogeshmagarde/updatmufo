@@ -15,4 +15,5 @@ urlpatterns = [
     path("getjockey_owner/", AudioJockeyConnectedOwner.as_view(), name="getjockey_owner"),
     path('userview/', userview.as_view(), name="userview"),
     path('alluser/', Alluser.as_view(), name="userview"),
+    
 ]

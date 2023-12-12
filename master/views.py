@@ -18,7 +18,7 @@ from Coins_trader.models import *
 from Jockey_club_owner.models import *
 from master.models import *
 from datetime import *
-from django.utils import timezone
+from datetime import *
 # class FollowUser(APIView):
 #     @method_decorator(authenticate_token)
 #     def get(self, request, follow):
@@ -93,10 +93,13 @@ class FollowUser(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, follow):
         try:
-            date = request.data.get("date")
+            # date = request.data.get("date")
+            date=datetime.today().date()
+            print("aaj",date)
+            created_date = datetime.today()
             following_common = Common.objects.get(uid=follow)  
             follow_user, created = Follow1.objects.get_or_create(user=request.user,date = date, following_user=following_common)
-        
+            
             print("Follow User:", follow_user)
             
             if not created:
@@ -110,18 +113,82 @@ class FollowUser(APIView):
                             if created:
                                 today_follow_user = Follow1.objects.filter(user=request.user,date = date).count()
                                 print(today_follow_user)
-                                today=Follow_claim_coins.objects.filter(user=request.user,created_at=date).count()
-                                print(today,"hello")
-                                if today_follow_user == 5 and today < 1:
+                                today=Follow_claim_coins.objects.filter(user=request.user,created_date__date=created_date.date()).count()
+                                print(today,"today claim")
+                                if today_follow_user == 2 and today < 1:
                                     print("10 user complite")
                                     user_profile = User.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
                                     user_profile.coins += 10 
                                     user_profile.save()
                                     print(user_profile.coins)
-                                    Follow_claim_coins.objects.create(user=request.user,created_at=date, claim_coins=True)
+                                    Follow_claim_coins.objects.create(user=request.user,created_date=created_date, claim_coins=True)
+                                    return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
+                                
+                       elif isinstance(profile_data, Audio_Jockey):
+                           if created:
+                                today_follow_user = Follow1.objects.filter(user=request.user,date = date).count()
+                                print(today_follow_user)
+                                today = Audio_JockeyFollow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
+                                print(today,"today claim")
+                                if today_follow_user == 2 and today < 1:
+                                    print("10 user complite")
+                                    user_profile = Audio_Jockey.objects.get(token=request.user.token)
+                                    print(f"get {10} coins user account.")
+                                    user_profile.coins += 10 
+                                    user_profile.save()
+                                    print(user_profile.coins)
+                                    Audio_JockeyFollow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
+                                    return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
+                                
+                       elif isinstance(profile_data, Jockey_club_owner):
+                           if created:
+                                today_follow_user = Follow1.objects.filter(user=request.user,date = date).count()
+                                print(today_follow_user)
+                                today = Jockey_club_owner_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
+                                print(today,"today claim")
+                                if today_follow_user == 2 and today < 1:
+                                    print("10 user complite")
+                                    user_profile = Jockey_club_owner.objects.get(token=request.user.token)
+                                    print(f"get {10} coins user account.")
+                                    user_profile.coins += 10 
+                                    user_profile.save()
+                                    print(user_profile.coins)
+                                    Jockey_club_owner_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
                                     
+                       elif isinstance(profile_data, Coins_club_owner):
+                           if created:
+                                today_follow_user = Follow1.objects.filter(user=request.user,date = date).count()
+                                print(today_follow_user)
+                                today = Coins_club_owner_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
+                                print(today,"today claim")
+                                if today_follow_user == 2 and today < 1:
+                                    print("10 user complite")
+                                    user_profile = Coins_club_owner.objects.get(token=request.user.token)
+                                    print(f"get {10} coins user account.")
+                                    user_profile.coins += 10 
+                                    user_profile.save()
+                                    print(user_profile.coins)
+                                    Coins_club_owner_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
+                                    return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
+                                
+                       elif isinstance(profile_data, Coins_trader):
+                           if created:
+                                today_follow_user = Follow1.objects.filter(user=request.user,date = date).count()
+                                print(today_follow_user)
+                                today = Coins_trader_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
+                                print(today,"today claim")
+                                if today_follow_user == 2 and today < 1:
+                                    print("10 user complite")
+                                    user_profile = Coins_trader.objects.get(token=request.user.token)
+                                    print(f"get {10} coins user account.")
+                                    user_profile.coins += 10 
+                                    user_profile.save()
+                                    print(user_profile.coins)
+                                    Coins_trader_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
+                                    return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)     
+                                
                 return Response({'success': True, 'message': 'Followed user'})
         except Common.DoesNotExist:
             return Response({'success': False, 'message': 'User does not exist.'})

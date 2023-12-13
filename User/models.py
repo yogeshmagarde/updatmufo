@@ -71,6 +71,13 @@ class room_join_claim_coins(models.Model):
     created_date = models.DateTimeField(default=now)
     def __str__(self):
         return str(self.user)
+    
+class room_create_claim_coins(models.Model):
+    user = models.ForeignKey(Audio_Jockey, on_delete=models.CASCADE)
+    claim_coins = models.BooleanField(max_length=100)
+    created_date = models.DateTimeField(default=now)
+    def __str__(self):
+        return str(self.user)
 
 
 class claim_coins(models.Model):

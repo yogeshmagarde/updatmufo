@@ -9,6 +9,6 @@ admin.site.register(Coinsclubownerdaliylogin)
 admin.site.register(Coins_traderdaliylogin)
 admin.site.register(Jockeyclubownerlogin)
 admin.site.register(Audiojockeyloigin)
-
+admin.site.register(room_create_claim_coins)
 
 

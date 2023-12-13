@@ -16,6 +16,10 @@ import html
 from rest_framework.views import APIView
 from Chat.consumer import ChatConsumer
 from Chat.consumer import get_room_users
+from User.models import room_create_claim_coins
+from django.utils import timezone
+from datetime import timedelta
+
 
 class RoomViewSets(viewsets.ModelViewSet):
     serializer_class = serializers.RoomSerializer
@@ -27,6 +31,7 @@ class RoomViewSets(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         room_name = serializer.validated_data.get('room_name')
         serializer.save(creator=request.user)  # Use the authenticated user
+        self.add_coins(request.user, 10)
         serializer.save(room_name=html.escape(room_name))
         return Response(
             {
@@ -36,7 +41,13 @@ class RoomViewSets(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    
+    def add_coins(self, user, amount):
+            user.coins += amount
+            user.save()
+            room_create_claim_coins.objects.create(user=user,created_date=timezone.now(),claim_coins=True)
+
+
+
     def retrieve(self, request,room_code, *args, **kwargs):
         lookup_field = self.lookup_field or self.lookup_url_kwarg
         lookup_kwargs = {lookup_field: self.kwargs[lookup_field]}
@@ -52,8 +63,7 @@ class RoomViewSets(viewsets.ModelViewSet):
         room_users = get_room_users(room_code)
         print("joined_room_profile_pictures",room_users)
         return Response({"chat_messages":chat_messages,"room_creator_profile_picture":room_creator_profile_picture,"joined_room_profile_pictures":room_users})
-
-
+    
 class ChatMessageList(APIView):
     def get(self, request, format=None):
         chat_messages = ChatMessage.objects.all()
@@ -90,3 +100,6 @@ class AllRoomofjockey(APIView):
         Rooms= Room.objects.filter(creator=request.user.id)
         serializer = serializers.RoomsGetSerializer(Rooms,many=True)
         return Response(serializer.data)
+    
+
+    

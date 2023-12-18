@@ -12,7 +12,6 @@ client = razorpay.Client(auth=(
 )
 
 class RazorpayClient:
-
     def create_order(self, amount, currency):
         data = {
             "amount": amount * 100,

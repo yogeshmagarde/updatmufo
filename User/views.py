@@ -579,7 +579,6 @@ class Audio_Jockeydaliyclaim(APIView):
 
 
 class RazorpayOrderAPIView(APIView):
-    
     def post(self, request):
         razorpay_order_serializer = RazorpayOrderSerializer(data=request.data)
         if razorpay_order_serializer.is_valid():
@@ -601,35 +600,9 @@ class RazorpayOrderAPIView(APIView):
             }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
-# class TransactionAPIView(APIView):
-#     serialiser_class = Transactionmodelserializer
-#     def verify_payment(self, razorpay_order_id, razorpay_payment_id, razorpay_signature):
-#         try:
-#             return self.client.utility.verify_payment_signature({
-#                             'razorpay_order_id': razorpay_order_id,
-#                             'razorpay_payment_id': razorpay_payment_id,
-#                             'razorpay_signature': razorpay_signature
-#                             })
-#         except Exception as e:
-#             return Response({"erroe":str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
-#     def post(self,request):
-#         serialiser = self.serialiser_class(data = request.data)
-#         if serialiser .is_valid():
-#             self.verify_payment(
-#             razorpay_order_id = serialiser.initial_data.get('payment_id'),
-#             razorpay_payment_id = serialiser.initial_data.get('order_id'),
-#             razorpay_signature = serialiser.initial_data.get('signature')
-#             )
-#             serialiser.save()
-#             return Response({"Message":"payment successful","data":serialiser.data}, status = status.HTTP_201_CREATED)
-#         else:
-#             return Response({"error":serialiser.errors}, status = status.HTTP_400_BAD_REQUEST)
-
 
 
 class TransactionAPIView(APIView):
-    
     def post(self, request):
         transaction_serializer = Transactionmodelserializer(data=request.data)
         if transaction_serializer.is_valid():

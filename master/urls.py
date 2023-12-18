@@ -17,6 +17,5 @@ urlpatterns = [
     path('Searchalluser/', Searchalluser.as_view(), name="userview"),
     path('allcommonuser/', Alluser.as_view(), name="userview"),
     path('gift-transfer/', GiftTransfer.as_view(), name='coin-transfer'),
-    path('top-fanlist/', Top_fans_listing_View.as_view(), name='coin-transfer'),
     
 ]

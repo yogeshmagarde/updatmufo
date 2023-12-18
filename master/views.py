@@ -336,3 +336,195 @@ class Alluser(APIView):
         return Response(serialiser.data)
     
 
+
+# class CoinTransfer(APIView):
+#     @method_decorator(authenticate_token)
+#     def post(self, request, *args, **kwargs):
+#         serializer = CoinTransferSerializer(data=request.data)
+#         if serializer.is_valid():
+#             receiver_uid = serializer.validated_data['receiver_uid']
+#             amount = serializer.validated_data['amount']
+#             try:
+#                 receiver = Common.objects.get(uid=receiver_uid)
+#                 sender = Common.objects.get(uid=request.user.uid)
+#                 uid=receiver.uid
+#                 token=sender.token
+#                 profiles = [Audio_Jockey, Coins_club_owner,Coins_trader, Jockey_club_owner, User]
+#                 for profile_model in profiles:
+#                        profile = profile_model.objects.filter(uid=uid)
+#                        if profile.exists():
+#                             if profile_model == User or Audio_Jockey or Coins_club_owner or Coins_trader or Jockey_club_owner:
+#                                 recever_user = profile.first()
+#                                 recever_user.coins += amount
+#                                 recever_user.save()
+#                                 print(recever_user.coins, "recever_user.coins")
+#                             else:
+#                                 print("no username")
+
+#                        profile_data = profile_model.objects.filter(token=token)
+#                        if profile_data.exists():
+#                             if profile_model == User or Audio_Jockey or Coins_club_owner or Coins_trader or Jockey_club_owner:
+#                                 sender_user = profile_data.first()
+#                                 if sender_user.coins >= amount:
+#                                         sender_user.coins -= amount
+#                                         sender_user.save()
+#                                         return Response({"message": "Coins transferred successfully."}, status=status.HTTP_200_OK)
+#                             else:
+#                                 print("no username")
+#                 if sender.coins >= amount:
+#                     sender.coins -= amount
+#                     sender.save()
+
+#                     receiver.coins += amount
+#                     receiver.save()
+
+#                     return Response({"message": "Coins transferred successfully."}, status=status.HTTP_200_OK)
+#                 else:
+#                     return Response({"error": "Insufficient coins in the sender's account."}, status=status.HTTP_400_BAD_REQUEST)
+#             except Common.DoesNotExist:
+#                 return Response({"error": f"User with UID '{receiver_uid}' not found."}, status=status.HTTP_404_NOT_FOUND)
+#         else:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GiftTransfer(APIView):
+    @method_decorator(authenticate_token)
+    def post(self, request, *args, **kwargs):
+        serializer = CoinTransferSerializer(data=request.data)
+        if serializer.is_valid():
+            receiver_uid = serializer.validated_data['receiver_uid']
+            amount = serializer.validated_data['amount']
+
+            try:
+                receiver = Common.objects.get(uid=receiver_uid)
+                sender = Common.objects.get(uid=request.user.uid)
+
+                if sender == receiver:
+                    return Response({"error": "Sender and receiver cannot be the same user."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+
+                for profile_model in profiles:
+                    receiver_profile = profile_model.objects.filter(uid=receiver.uid)
+                    if receiver_profile.exists():
+                        receipient = receiver_profile.first()
+                        receipient.coins += amount
+                        receipient.save()
+                        print(receipient.coins, "receipient.coins")
+
+                for profile_model in profiles:
+                    sender_profile = profile_model.objects.filter(token=sender.token)
+                    if sender_profile.exists():
+                        sender_user = sender_profile.first()
+                        if sender_user.coins >= amount:
+                            sender_user.coins -= amount
+                            sender_user.save()
+                            GiftTransactionhistory.objects.create(sender=sender, receiver=receiver, amount=amount, created_date=datetime.today())
+                            return Response({"message": f"'{amount} $' Coins transferred successfully."}, status=status.HTTP_200_OK)
+                        
+                return Response({"error": "Insufficient coins in the sender's account."}, status=status.HTTP_400_BAD_REQUEST)
+            except Common.DoesNotExist:
+                return Response({"error": f"User with UID '{receiver_uid}' not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+# class Top_fans_listing_View(APIView):
+#     @method_decorator(authenticate_token)
+#     def get(self, request, id=None):
+#         try:
+#             user = Common.objects.get(uid=request.user.uid)
+#             time_period = request.query_params.get('time_period')
+
+#             if time_period is not None:
+#                 print("monthly condition")
+#                 current_month = timezone.now().month
+#                 received_transactions = GiftTransactionhistory.objects.filter(receiver=user,created_date__month=current_month)
+#             else:
+#                 print("lifetime condition")
+#                 received_transactions = GiftTransactionhistory.objects.filter(receiver=user)
+#             sorted_transactions = received_transactions.order_by('-created_date')
+
+#             total_coins_dict = {}
+
+#             for transaction in sorted_transactions:
+#                 from_user_name = transaction.sender
+#                 coins = transaction.amount
+
+#                 if from_user_name in total_coins_dict:
+#                     total_coins_dict[from_user_name] += coins
+#                 else:
+#                     total_coins_dict[from_user_name] = coins
+
+#             vip_data = sorted(
+#                 [{"from_trader": user, "coins": total_coins} for user, total_coins in total_coins_dict.items()],
+#                 key=lambda x: x["coins"],
+#                 reverse=True
+#             )
+
+#             return Response({"vip_data": vip_data})
+
+#         except Audio_Jockey.DoesNotExist:
+#             return Response({'error': 'User not found.'})
+
+#         except GiftTransactionhistory.DoesNotExist:
+#             return Response({'error': 'No transactions received by User.'})
+
+#         except Exception as e:
+#             return Response({'error': str(e)})
+        
+
+
+
+
+class Top_fans_listing_View(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            user = Common.objects.get(uid=request.user.uid)
+            time_period = request.query_params.get('time_period')
+
+            if time_period is not None:
+                print("monthly condition")
+                current_month = timezone.now().month
+                received_transactions = GiftTransactionhistory.objects.filter(
+                    receiver=user, created_date__month=current_month
+                )
+            else:
+                print("lifetime condition")
+                received_transactions = GiftTransactionhistory.objects.filter(receiver=user)
+
+            sorted_transactions = received_transactions.order_by('-created_date')
+
+            total_coins_dict = {}
+            max_coins_sender = None  # Variable to store the sender with the highest total coins
+
+            for transaction in sorted_transactions:
+                from_user_name = transaction.sender
+                coins = transaction.amount
+
+                if from_user_name in total_coins_dict:
+                    total_coins_dict[from_user_name] += coins
+                else:
+                    total_coins_dict[from_user_name] = coins
+
+                # Update max_coins_sender if the current sender has more coins
+                if max_coins_sender is None or total_coins_dict[from_user_name] > total_coins_dict[max_coins_sender]:
+                    max_coins_sender = from_user_name
+
+            vip_data = sorted(
+                [{"from_trader": user, "coins": total_coins} for user, total_coins in total_coins_dict.items()],
+                key=lambda x: x["coins"],
+                reverse=True
+            )
+
+            return Response({"vip_data": vip_data, "max_coins_sender": max_coins_sender})
+
+        except Common.DoesNotExist:
+            return Response({'error': 'User not found.'})
+
+        except GiftTransactionhistory.DoesNotExist:
+            return Response({'error': 'No transactions received by User.'})
+
+        except Exception as e:
+            return Response({'error': str(e)})

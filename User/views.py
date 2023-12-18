@@ -131,7 +131,7 @@ class Login(APIView):
             user.Otpcreated_at = current_time + timedelta(minutes=5)
 
         user.save()
-        # send_otp_on_phone(user.phone, user.otp)
+        send_otp_on_phone(user.phone, user.otp)
         return Response({'uid': str(user.uid), 'otp': str(user.otp), 'message': "Otp sent successfully"})
 
 

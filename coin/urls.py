@@ -27,7 +27,8 @@ urlpatterns = [
     path("jokeyclubtopfanslist/", Jockey_club_ownerTop_fans_listing_View.as_view()),
     
     path("globletopfanslist/", Top_fans_listing_globle_View.as_view()),
-    path("listofAudioJockey/", listofAudioJockey.as_view()),       
+    path("listofAudioJockey/", listofAudioJockey.as_view()),
+          
 
     
 ]

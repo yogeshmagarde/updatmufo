@@ -49,7 +49,7 @@ class transfar1(APIView):
 
 class CoinTransfer2(APIView):
     serializer_class = CointraderSerializer
-    @method_decorator(authenticate_token)
+    @method_decorator(authenticate_token) 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -753,3 +753,11 @@ class listofAudioJockey(APIView):
 
         except Exception as e:
             return Response({'error': str(e)})
+
+
+
+
+
+
+# views.py
+

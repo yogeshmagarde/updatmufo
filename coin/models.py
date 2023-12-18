@@ -1,11 +1,10 @@
 from django.db import models
-
-# Create your models here.
 from Coins_club_owner.models import *
 from Coins_trader.models import *
 from Jockey_club_owner.models import *
 from Audio_Jockey.models import *
 from User.models import *
+from master.models import*
 
 from django.utils.timezone import now
 
@@ -40,3 +39,9 @@ class User_to_Audio_Jockey(models.Model):
     to_Audio_Jockey = models.ForeignKey(Audio_Jockey, on_delete=models.PROTECT)
     amount = models.PositiveIntegerField()
     created_date = models.DateTimeField(default=now)
+
+
+# class Top_Fan_list(models.Model):
+#     receiver = models.ForeignKey(Common, on_delete=models.PROTECT, related_name='received_transactions')
+#     amount = models.PositiveIntegerField()
+#     created_date = models.DateTimeField(default=now)

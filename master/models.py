@@ -75,3 +75,11 @@ class Coins_trader_Follow_claim(models.Model):
     created_date = models.DateTimeField(default=now)
     def __str__(self):
         return str(self.user)+"          "+ str(self.created_date)
+    
+class GiftTransactionhistory(models.Model):
+    sender = models.ForeignKey(Common, related_name='sent_transactions', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(Common, related_name='received_transactions', on_delete=models.CASCADE)
+    amount = models.PositiveIntegerField()
+    created_date = models.DateTimeField(default=now)
+    def __str__(self):
+        return str(self.sender)+"          "+ str(self.created_date)

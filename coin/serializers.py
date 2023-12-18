@@ -39,8 +39,6 @@ class Audio_JockeySerializer(serializers.ModelSerializer):
 
 
 
-# transaction history serializer
-
 class clubowner1Serializer(serializers.ModelSerializer):
     Coins_Club_Owner_Id = serializers.SerializerMethodField()
 

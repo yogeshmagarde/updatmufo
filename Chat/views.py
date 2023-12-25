@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from .permissions import RoomPermission
 from . import serializers
-from .models import Room, Chat,ChatMessage
+from .models import Room, Chat,ChatMessage,Notification
 from .serializers import ChatMessageSerializer
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -19,6 +19,9 @@ from Chat.consumer import get_room_users
 from User.models import room_create_claim_coins
 from django.utils import timezone
 from datetime import timedelta
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
 
 
 class RoomViewSets(viewsets.ModelViewSet):
@@ -30,7 +33,7 @@ class RoomViewSets(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         room_name = serializer.validated_data.get('room_name')
-        serializer.save(creator=request.user)  # Use the authenticated user
+        serializer.save(creator=request.user) #Use the authenticated user
         self.add_coins(request.user, 10)
         serializer.save(room_name=html.escape(room_name))
         return Response(
@@ -42,10 +45,17 @@ class RoomViewSets(viewsets.ModelViewSet):
         )
 
     def add_coins(self, user, amount):
-            user.coins += amount
-            user.save()
-            room_create_claim_coins.objects.create(user=user,created_date=timezone.now(),claim_coins=True)
-
+            created_date = timezone.now()#datetime.today()
+            today = room_create_claim_coins.objects.filter(user=user, created_date__date=created_date.date()).count()
+            print(today)
+            if today<100:
+                user.coins += amount
+                user.save()
+                message = f"You got {amount} coins to create a chatroom!"
+                notification = Notification(user=user, message=message)
+                notification.save()
+            room_create_claim_coins.objects.create(user=user,created_date=created_date,claim_coins=True)
+           
 
 
     def retrieve(self, request,room_code, *args, **kwargs):

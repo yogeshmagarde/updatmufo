@@ -579,6 +579,7 @@ class Audio_Jockeydaliyclaim(APIView):
 
 
 class RazorpayOrderAPIView(APIView):
+    @method_decorator(authenticate_token)
     def post(self, request):
         razorpay_order_serializer = RazorpayOrderSerializer(data=request.data)
         if razorpay_order_serializer.is_valid():
@@ -603,6 +604,7 @@ class RazorpayOrderAPIView(APIView):
 
 
 class TransactionAPIView(APIView):
+    @method_decorator(authenticate_token)
     def post(self, request):
         transaction_serializer = Transactionmodelserializer(data=request.data)
         if transaction_serializer.is_valid():
@@ -611,12 +613,37 @@ class TransactionAPIView(APIView):
                 razorpay_order_id = transaction_serializer.validated_data.get("order_id"),
                 razorpay_signature = transaction_serializer.validated_data.get("signature")
             )
+            
+            amount = transaction_serializer.validated_data.get("amount")
+            if amount == 10000:
+                profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+                for profile_model in profiles:
+                    user_profile = profile_model.objects.filter(token=request.user.token).first()
+                    if isinstance(user_profile, User):
+                        user_profile = User.objects.get(token=request.user.token)
+                        user_profile.coins += 1000 
+                        user_profile.save()
+                    elif isinstance(user_profile, Audio_Jockey):
+                        user_profile = Audio_Jockey.objects.get(token=request.user.token)
+                        user_profile.coins += 1000 
+                        user_profile.save()
+                    elif isinstance(user_profile, Jockey_club_owner):
+                        user_profile = Jockey_club_owner.objects.get(token=request.user.token)
+                        user_profile.coins += 1000 
+                        user_profile.save()
+                    elif isinstance(user_profile, Coins_trader):
+                        user_profile = Coins_trader.objects.get(token=request.user.token)
+                        user_profile.coins += 1000 
+                        user_profile.save()
+                    elif isinstance(user_profile, Coins_club_owner):
+                        user_profile = Coins_club_owner.objects.get(token=request.user.token)
+                        user_profile.coins += 1000 
+                        user_profile.save()
+            else:
+                return Response({"message": "Transaction processed, but no bonus coins added."}, status=status.HTTP_200_OK)        
             transaction_serializer.save()
-            response = {
-                "status_code": status.HTTP_201_CREATED,
-                "message": "transaction created"
-            }
-            return Response(response, status=status.HTTP_201_CREATED)
+            
+            return Response({"message": "transaction created"}, status=status.HTTP_201_CREATED)
         else:
             response = {
                 "status_code": status.HTTP_400_BAD_REQUEST,
@@ -624,3 +651,4 @@ class TransactionAPIView(APIView):
                 "error": transaction_serializer.errors
             }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        

@@ -6,7 +6,7 @@ from Jockey_club_owner.models import *
 from Audio_Jockey.models import *
 from User.models import *
 # Create your models here.
-from django.db import models
+
 
 class Common(models.Model):
     Name = models.CharField(max_length=20, blank=False, null=False)
@@ -83,3 +83,11 @@ class GiftTransactionhistory(models.Model):
     created_date = models.DateTimeField(default=now)
     def __str__(self):
         return str(self.sender)+"          "+ str(self.created_date)
+    
+    
+class UserSpent_Time(models.Model):
+    user_uid = models.CharField(max_length=255)  
+    created_date = models.DateTimeField(auto_now_add=True)
+    time_duration = models.DurationField()
+    def __str__(self):
+        return f"{self.user_uid} - {self.created_date}"

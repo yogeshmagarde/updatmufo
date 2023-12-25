@@ -17,5 +17,6 @@ urlpatterns = [
     path('Searchalluser/', Searchalluser.as_view(), name="userview"),
     path('allcommonuser/', Alluser.as_view(), name="userview"),
     path('gift-transfer/', GiftTransfer.as_view(), name='coin-transfer'),
-    
+    path('user-spent-time/', UserSpentTimeList.as_view(), name='user-spent-time-list'),
+    # path('user-spent-time/<int:pk>/', UserSpentTimeDetail.as_view(), name='user-spent-time-detail'),
 ]

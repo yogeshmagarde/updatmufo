@@ -1,5 +1,6 @@
-from django.shortcuts import render
 
+from django.utils.timezone import now
+from datetime import datetime
 # Create your views here.
 from django.shortcuts import render
 from rest_framework.views import APIView
@@ -19,74 +20,129 @@ from Jockey_club_owner.models import *
 from master.models import *
 from datetime import *
 from datetime import *
-# class FollowUser(APIView):
-#     @method_decorator(authenticate_token)
-#     def get(self, request, follow):
-#         try:
-#             following_common = Common.objects.get(uid=follow)  
-#             follow_user, created = Follow1.objects.get_or_create(user=request.user, following_user=following_common)
+from django.utils import timezone
+class UserSpentTimeList(APIView):
+    def seconds_to_hms(self,seconds):
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return int(hours), int(minutes), int(seconds)
+
+    def get(self, request, format=None):
         
-#             print("Follow User:", follow_user)
+        month = request.query_params.get('month')
+        Daliy = request.query_params.get('Daliy')
+        session = request.query_params.get('session')
+        
+        if month:
+            current_month = timezone.now().month
+            user_spent_times = UserSpent_Time.objects.filter(created_date__month=current_month)
             
-#             if not created:
-#                 follow_user.delete()
-#                 return Response({'success': True, 'message': 'Unfollowed user'})
-#             else:
-#                 if created:
-#                     today = datetime.now(timezone.utc)
-#                     start_of_day = today.replace(hour=0, minute=0, second=0, microsecond=0)
-#                     end_of_day = today.replace(hour=23, minute=59, second=59, microsecond=999999)
-#                     today_follow_user = Follow1.objects.filter(user=request.user,created_at__range=(start_of_day, end_of_day)).count()
-#                     print(today_follow_user)
-#                     if today_follow_user == 10:
-#                         print("10 user complite")
-#                         profiles = [Audio_Jockey, Coins_club_owner,Coins_trader, Jockey_club_owner, User]
-#                         for profile_model in profiles:
-#                                 profile_data = profile_model.objects.filter(token=request.user.token).first()
+            user_totals = {}
+            profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+            
+            for user_spent_time in user_spent_times:
+                user_id = user_spent_time.user_uid
+                time_duration_seconds = user_spent_time.time_duration.total_seconds()
+                hours, minutes, seconds = self.seconds_to_hms(time_duration_seconds)
+
+                for profile_model in profiles:
+                    user_profile = profile_model.objects.filter(uid=user_id)
+                    if user_profile.exists():
+                        recipient = user_profile.first()
+                        user_name = recipient.Name
+                        if user_id not in user_totals:
+                            user_totals[user_id] = {"user_name": user_name, "total_duration": {"hours": 0, "minutes": 0, "seconds": 0}}
+
+                        user_totals[user_id]["total_duration"]["hours"] += hours
+                        user_totals[user_id]["total_duration"]["minutes"] += minutes
+                        user_totals[user_id]["total_duration"]["seconds"] += seconds
+                        user_totals[user_id]["total_duration"]["minutes"] += user_totals[user_id]["total_duration"]["seconds"] // 60
+                        user_totals[user_id]["total_duration"]["seconds"] %= 60
+                        user_totals[user_id]["total_duration"]["hours"] += user_totals[user_id]["total_duration"]["minutes"] // 60
+                        user_totals[user_id]["total_duration"]["minutes"] %= 60
+                        
+                        break
+            user_profiles = [{"user_id": key, "user_name": value["user_name"], "total_duration": value["total_duration"]} for key, value in user_totals.items()]
+
+            return Response({"user_profiles": user_profiles})
         
-#                                 if isinstance(profile_data, User):
-#                                     user_profile = User.objects.get(token=request.user.token)
-#                                     if not user_profile.coins:
-#                                         print(f"get {10} coins user account.")
-#                                         user_profile.coins += 10
-#                                         user_profile.save()
-#                                         print(user_profile.coins)
-                                        
-#                                 elif isinstance(profile_data, Audio_Jockey):
-#                                     user_profile = Audio_Jockey.objects.get(token=request.user.token)
-#                                     if not user_profile.coins:
-#                                         print(f"get {10} coins user account.")
-#                                         user_profile.coins += 10
-#                                         user_profile.save()
-#                                         print(user_profile.coins)
+        elif Daliy:
+            Daliy = timezone.now().date()
+            user_spent_times = UserSpent_Time.objects.filter(created_date__date=Daliy)
+            
+            user_totals = {}
+            profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+            
+            for user_spent_time in user_spent_times:
+                user_id = user_spent_time.user_uid
+                time_duration_seconds = user_spent_time.time_duration.total_seconds()
+                hours, minutes, seconds = self.seconds_to_hms(time_duration_seconds)
 
-#                                 elif isinstance(profile_data, Coins_club_owner):
-#                                     user_profile = Coins_club_owner.objects.get(token=request.user.token)
-#                                     if not user_profile.coins:
-#                                         print(f"get {10} coins user account.")
-#                                         user_profile.coins += 10
-#                                         user_profile.save()
-#                                         print(user_profile.coins)
+                for profile_model in profiles:
+                    user_profile = profile_model.objects.filter(uid=user_id)
+                    if user_profile.exists():
+                        recipient = user_profile.first()
+                        user_name = recipient.Name
+                        if user_id not in user_totals:
+                            user_totals[user_id] = {"user_name": user_name, "total_duration": {"hours": 0, "minutes": 0, "seconds": 0}}
 
-#                                 elif isinstance(profile_data, Coins_trader):
-#                                     user_profile = Coins_trader.objects.get(token=request.user.token)
-#                                     if not user_profile.coins:
-#                                         print(f"get {10} coins user account.")
-#                                         user_profile.coins += 10
-#                                         user_profile.save()
-#                                         print(user_profile.coins)
+                        user_totals[user_id]["total_duration"]["hours"] += hours
+                        user_totals[user_id]["total_duration"]["minutes"] += minutes
+                        user_totals[user_id]["total_duration"]["seconds"] += seconds
 
-#                                 elif isinstance(profile_data, Jockey_club_owner):
-#                                     user_profile = Jockey_club_owner.objects.get(token=request.user.token)
-#                                     if not user_profile.coins:
-#                                         print(f"get {10} coins user account.")
-#                                         user_profile.coins += 10
-#                                         user_profile.save()
-#                                         print(user_profile.coins)     
+                        user_totals[user_id]["total_duration"]["minutes"] += user_totals[user_id]["total_duration"]["seconds"] // 60
+                        user_totals[user_id]["total_duration"]["seconds"] %= 60
+                        user_totals[user_id]["total_duration"]["hours"] += user_totals[user_id]["total_duration"]["minutes"] // 60
+                        user_totals[user_id]["total_duration"]["minutes"] %= 60
+                        break
 
-#                 return Response({'success': True, 'message': 'Followed user'})
-#         except Common.DoesNotExist:
-#             return Response({'success': False, 'message': 'User does not exist.'})
+            user_profiles = [{"user_id": key, "user_name": value["user_name"], "total_duration": value["total_duration"]} for key, value in user_totals.items()]
+
+            return Response({"user_profiles": user_profiles})
+        
+        elif session:
+            session_start = timezone.now() - timezone.timedelta(hours=1)
+            session_end = timezone.now() 
+            user_spent_times = UserSpent_Time.objects.filter(created_date__range=[session_start, session_end])
+            
+            user_totals = {}
+            profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+            
+            for user_spent_time in user_spent_times:
+                user_id = user_spent_time.user_uid
+                time_duration_seconds = user_spent_time.time_duration.total_seconds()
+                hours, minutes, seconds = self.seconds_to_hms(time_duration_seconds)
+
+                for profile_model in profiles:
+                    user_profile = profile_model.objects.filter(uid=user_id)
+                    if user_profile.exists():
+                        recipient = user_profile.first()
+                        user_name = recipient.Name
+                        if user_id not in user_totals:
+                            user_totals[user_id] = {"user_name": user_name, "total_duration": {"hours": 0, "minutes": 0, "seconds": 0}}
+
+                        user_totals[user_id]["total_duration"]["hours"] += hours
+                        user_totals[user_id]["total_duration"]["minutes"] += minutes
+                        user_totals[user_id]["total_duration"]["seconds"] += seconds
+
+                        user_totals[user_id]["total_duration"]["minutes"] += user_totals[user_id]["total_duration"]["seconds"] // 60
+                        user_totals[user_id]["total_duration"]["seconds"] %= 60
+                        user_totals[user_id]["total_duration"]["hours"] += user_totals[user_id]["total_duration"]["minutes"] // 60
+                        user_totals[user_id]["total_duration"]["minutes"] %= 60
+
+                        break
+
+            user_profiles = [{"user_id": key, "user_name": value["user_name"], "total_duration": value["total_duration"]} for key, value in user_totals.items()]
+
+            return Response({"user_profiles": user_profiles})
+        return Response({"msg":"error"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, format=None):
+        serializer = UserSpentTimeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FollowUser(APIView):
@@ -115,7 +171,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today=Follow_claim_coins.objects.filter(user=request.user,created_date__date=created_date.date()).count()
                                 print(today,"today claim")
-                                if today_follow_user == 2 and today < 1:
+                                if today_follow_user == 10 and today < 1:
                                     print("10 user complite")
                                     user_profile = User.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
@@ -131,7 +187,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today = Audio_JockeyFollow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
                                 print(today,"today claim")
-                                if today_follow_user == 2 and today < 1:
+                                if today_follow_user == 10 and today < 1:
                                     print("10 user complite")
                                     user_profile = Audio_Jockey.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
@@ -147,7 +203,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today = Jockey_club_owner_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
                                 print(today,"today claim")
-                                if today_follow_user == 2 and today < 1:
+                                if today_follow_user == 10 and today < 1:
                                     print("10 user complite")
                                     user_profile = Jockey_club_owner.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
@@ -163,7 +219,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today = Coins_club_owner_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
                                 print(today,"today claim")
-                                if today_follow_user == 2 and today < 1:
+                                if today_follow_user == 10 and today < 1:
                                     print("10 user complite")
                                     user_profile = Coins_club_owner.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
@@ -179,7 +235,7 @@ class FollowUser(APIView):
                                 print(today_follow_user)
                                 today = Coins_trader_Follow_claim.objects.filter(user=request.user,created_date__date=created_date.date()).count()
                                 print(today,"today claim")
-                                if today_follow_user == 2 and today < 1:
+                                if today_follow_user == 10 and today < 1:
                                     print("10 user complite")
                                     user_profile = Coins_trader.objects.get(token=request.user.token)
                                     print(f"get {10} coins user account.")
@@ -337,55 +393,6 @@ class Alluser(APIView):
     
 
 
-# class CoinTransfer(APIView):
-#     @method_decorator(authenticate_token)
-#     def post(self, request, *args, **kwargs):
-#         serializer = CoinTransferSerializer(data=request.data)
-#         if serializer.is_valid():
-#             receiver_uid = serializer.validated_data['receiver_uid']
-#             amount = serializer.validated_data['amount']
-#             try:
-#                 receiver = Common.objects.get(uid=receiver_uid)
-#                 sender = Common.objects.get(uid=request.user.uid)
-#                 uid=receiver.uid
-#                 token=sender.token
-#                 profiles = [Audio_Jockey, Coins_club_owner,Coins_trader, Jockey_club_owner, User]
-#                 for profile_model in profiles:
-#                        profile = profile_model.objects.filter(uid=uid)
-#                        if profile.exists():
-#                             if profile_model == User or Audio_Jockey or Coins_club_owner or Coins_trader or Jockey_club_owner:
-#                                 recever_user = profile.first()
-#                                 recever_user.coins += amount
-#                                 recever_user.save()
-#                                 print(recever_user.coins, "recever_user.coins")
-#                             else:
-#                                 print("no username")
-
-#                        profile_data = profile_model.objects.filter(token=token)
-#                        if profile_data.exists():
-#                             if profile_model == User or Audio_Jockey or Coins_club_owner or Coins_trader or Jockey_club_owner:
-#                                 sender_user = profile_data.first()
-#                                 if sender_user.coins >= amount:
-#                                         sender_user.coins -= amount
-#                                         sender_user.save()
-#                                         return Response({"message": "Coins transferred successfully."}, status=status.HTTP_200_OK)
-#                             else:
-#                                 print("no username")
-#                 if sender.coins >= amount:
-#                     sender.coins -= amount
-#                     sender.save()
-
-#                     receiver.coins += amount
-#                     receiver.save()
-
-#                     return Response({"message": "Coins transferred successfully."}, status=status.HTTP_200_OK)
-#                 else:
-#                     return Response({"error": "Insufficient coins in the sender's account."}, status=status.HTTP_400_BAD_REQUEST)
-#             except Common.DoesNotExist:
-#                 return Response({"error": f"User with UID '{receiver_uid}' not found."}, status=status.HTTP_404_NOT_FOUND)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class GiftTransfer(APIView):
     @method_decorator(authenticate_token)
     def post(self, request, *args, **kwargs):
@@ -426,5 +433,5 @@ class GiftTransfer(APIView):
                 return Response({"error": f"User with UID '{receiver_uid}' not found."}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
+      
+# from django.utils import timezone  

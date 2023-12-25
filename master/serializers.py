@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from master.models import *
+from django.utils import timezone
 
 class masterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,3 +62,17 @@ class GiftTransactionhistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = GiftTransactionhistory
         fields = ['sender', 'receiver', 'amount', 'created_date']
+
+class UserSpentTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSpent_Time
+        fields = ['time_duration','user_uid','created_date']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Explicitly set the timezone to 'Asia/Kolkata'
+        created_date = instance.created_date.astimezone(timezone.get_fixed_timezone(330))  # 330 is the offset for 'Asia/Kolkata'
+        representation['created_date'] = created_date.strftime('%Y-%m-%d %H:%M:%S')
+
+        return representation

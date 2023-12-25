@@ -1,7 +1,7 @@
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Chat , Room , Visitor,ChatMessage
+from .models import Chat , Room , Visitor,ChatMessage,Notification
 from User.models import User,room_join_claim_coins
 from master.models import Common
 from bots import BotHandler
@@ -676,3 +676,29 @@ class OnetoOneChatConsumer(AsyncWebsocketConsumer):
         sender = Common.objects.get(id=sender_id)
         receiver = Common.objects.get(id=receiver_id)
         ChatMessage.objects.create(sender=sender, receiver=receiver, content=message)
+
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add("test_group", self.channel_name)
+        await self.accept()
+        await self.send(text_data=json.dumps({'status': 'connected Through Django Channels'}))
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard("test_group", self.channel_name)
+    
+    async def receive(self, text_data):
+        print(text_data)
+        self.send(text_data=json.dumps({'status': 'We Got You'}))
+
+    async def send_notification(self, event):
+
+        print("Sending notification:", event.get('value'))
+        
+        value = json.loads(event.get('value'))
+        await self.send(text_data=json.dumps({'value': value}))
+        
+   
+
+    #     await self.send(text_data=json.dumps({'notifications': notification_data}))

@@ -36,4 +36,4 @@ class Coins_trader(models.Model):
 
 
     def __str__(self):
-        return (self.Name)
+        return str(self.Name)

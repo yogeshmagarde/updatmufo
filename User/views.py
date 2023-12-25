@@ -6,6 +6,9 @@ from Mufo.Minxins import *
 from .serializers import *
 
 import razorpay
+from .razorpay import RazorpayClient
+rz_client = RazorpayClient()
+
 from django.conf import settings
 import json
 
@@ -21,7 +24,7 @@ from datetime import timedelta
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import User
+from .models import *
 from Audio_Jockey.models import Audio_Jockey
 from Coins_club_owner.models import Coins_club_owner
 from Coins_trader.models import Coins_trader
@@ -451,9 +454,6 @@ class Snapchatlogin(APIView):
             return Response({"message":"invalid"})
 
 
-
-
-
 class Coinsclaim(APIView):
     serialiser_class = CoinsclaimSerializer
     @method_decorator(authenticate_token)
@@ -461,8 +461,7 @@ class Coinsclaim(APIView):
         serialiser = self.serialiser_class(data = request.data)
         if serialiser .is_valid():
             claim = serialiser.initial_data.get('claim_coins')
-            # created_at = serialiser.initial_data.get('created_at')
-            created_at = datetime.today()#datetime.today()
+            created_at = datetime.today()
             print('created_at',created_at)
             if claim:
                 today_claimed_count = claim_coins.objects.filter(
@@ -478,73 +477,148 @@ class Coinsclaim(APIView):
                 return Response({"data":"You have already claimed coins today."})
             return Response({"data":"data"})
 
-
-
-class Recharge(APIView):
-    serialiser_class = PaymentgatwaySerializer
+class Coins_club_ownerdaliyclaim(APIView):
+    serialiser_class = Coins_club_ownerdaliyclaimSerializer
+    @method_decorator(authenticate_token)
     def post(self,request):
         serialiser = self.serialiser_class(data = request.data)
         if serialiser .is_valid():
-            name = serialiser.initial_data.get('order_product')
-            amount = serialiser.initial_data.get('order_amount')
-            public_key = settings.RAZORPAY_PUBLIC_KEY
-            secret_key = settings.RAZORPAY_SECRET_KEY
-            client = razorpay.Client(auth=(public_key, secret_key))
-            payment = client.order.create({"amount": int(amount)*100,"currency": "INR", "payment_capture": "1"})
-            order = Paymentgatway.objects.create(order_product=name, order_amount=amount,order_payment_id=payment['id'])
-            serializer = PaymentgatwaySerializer(order)
-            data = {"payment": payment,"order": serializer.data}
-            return Response({"Message":"create_order","data":data},status=status.HTTP_201_CREATED)
-        else:
-            return Response({"error":serialiser.errors},status=status.HTTP_400_BAD_REQUEST)
+            claim = serialiser.initial_data.get('claim_coins')
+            created_at = datetime.today()
+            print('created_at',created_at)
+            if claim:
+                today_claimed_count = Coinsclubownerdaliylogin.objects.filter(user=request.user,created_date__date=created_at.date()).count()
+                print(today_claimed_count)
+                if today_claimed_count==0:
+                    user = Coins_club_owner.objects.get(token=request.user.token)
+                    user.coins += 10
+                    user.save()
+                    Coinsclubownerdaliylogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
+                    return Response({"data": f"{10}Coins added successfully"})
+                return Response({"data":"You have already claimed coins today."})
+            return Response({"data":"data"})
 
-    # def get(self,request):
-    #     try:
-    #         razorpay_order_id = request.data.get('razorpay_order_id')
-    #         print("razorpay_order_id",razorpay_order_id)
-    #         razorpay_payment_id = request.data.get('razorpay_payment_id')
-    #         print("razorpay_payment_id",razorpay_payment_id)
-    #         razorpay_signature = request.data.get('razorpay_signature')
-    #         print("razorpay_signature",razorpay_signature)
 
-    #         public_key = settings.RAZORPAY_PUBLIC_KEY
-    #         secret_key = settings.RAZORPAY_SECRET_KEY 
-    #         client = razorpay.Client(auth=(public_key, secret_key))
 
-            # check=client.utility.verify_payment_signature({
-            #             'razorpay_order_id': razorpay_order_id,
-            #             'razorpay_payment_id': razorpay_payment_id,
-            #             'razorpay_signature': razorpay_signature
-            #             })
-    #         if check is not None:
-    #             return Response({"error":"somthing went wrong"})
-    #         return({"message":"payment successfully received!"})
-    #     except Exception as e:
-    #         return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
-
-class Transection(APIView):
-    serialiser_class = Transactionmodelserializer
-    def verify_payment(self, razorpay_order_id, razorpay_payment_id, razorpay_signature):
-        try:
-            return self.client.utility.verify_payment_signature({
-                            'razorpay_order_id': razorpay_order_id,
-                            'razorpay_payment_id': razorpay_payment_id,
-                            'razorpay_signature': razorpay_signature
-                            })
-
-        except Exception as e:
-            return Response({"erroe":str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
+class Coinstraderdaliyclaim(APIView):
+    serialiser_class = Coins_traderdaliyclaimSerializer
+    @method_decorator(authenticate_token)
     def post(self,request):
         serialiser = self.serialiser_class(data = request.data)
         if serialiser .is_valid():
-            self.verify_payment(
-            razorpay_order_id = serialiser.initial_data.get('payment_id'),
-            razorpay_payment_id = serialiser.initial_data.get('order_id'),
-            razorpay_signature = serialiser.initial_data.get('signature')
+            claim = serialiser.initial_data.get('claim_coins')
+            created_at = datetime.today()
+            print('created_at',created_at)
+            if claim:
+                today_claimed_count = Coins_traderdaliylogin.objects.filter(
+                    user=request.user,
+                    created_date__date=created_at.date()).count()
+                print(today_claimed_count)
+                if today_claimed_count==0:
+                    user = Coins_trader.objects.get(token=request.user.token)
+                    user.coins += 10
+                    user.save()
+                    Coins_traderdaliylogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
+                    return Response({"data": f"{10}Coins added successfully"})
+                return Response({"data":"You have already claimed coins today."})
+            return Response({"data":"data"})
+
+
+class Jockey_club_ownerdaliyclaim(APIView):
+    serialiser_class = Jockey_club_ownerdaliyclaimSerializer
+    @method_decorator(authenticate_token)
+    def post(self,request):
+        serialiser = self.serialiser_class(data = request.data)
+        if serialiser .is_valid():
+            claim = serialiser.initial_data.get('claim_coins')
+            created_at = datetime.today()
+            print('created_at',created_at)
+            if claim:
+                today_claimed_count = Jockeyclubownerlogin.objects.filter(
+                    user=request.user,
+                    created_date__date=created_at.date()).count()
+                print(today_claimed_count)
+                if today_claimed_count==0:
+                    user = Jockey_club_owner.objects.get(token=request.user.token)
+                    user.coins += 10
+                    user.save()
+                    Jockeyclubownerlogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
+                    return Response({"data": f"{10}Coins added successfully"})
+                return Response({"data":"You have already claimed coins today."})
+            return Response({"data":"data"})
+
+
+class Audio_Jockeydaliyclaim(APIView):
+    serialiser_class = Audio_JockeydaliyclaimSerializer
+    @method_decorator(authenticate_token)
+    def post(self,request):
+        print("pass king")
+        serialiser = self.serialiser_class(data = request.data)
+        if serialiser .is_valid():
+            claim = serialiser.initial_data.get('claim_coins')
+            created_at = datetime.today()
+            print('created_at',created_at)
+            if claim:
+                today_claimed_count = Audiojockeyloigin.objects.filter(
+                    user=request.user,
+                    created_date__date=created_at.date()).count()
+                print(today_claimed_count)
+                if today_claimed_count==0:
+                    user = Audio_Jockey.objects.get(token=request.user.token)
+                    user.coins += 10
+                    user.save()
+                    Audiojockeyloigin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
+                    return Response({"data": f"{10}Coins added successfully"})
+                return Response({"data":"You have already claimed coins today."})
+            return Response({"data":"data"})
+
+
+class RazorpayOrderAPIView(APIView):
+    
+    def post(self, request):
+        razorpay_order_serializer = RazorpayOrderSerializer(data=request.data)
+        if razorpay_order_serializer.is_valid():
+            order_response = rz_client.create_order(
+                amount=razorpay_order_serializer.validated_data.get("amount"),
+                currency=razorpay_order_serializer.validated_data.get("currency")
             )
-            serialiser.save()
-            return Response({"Message":"payment successful","data":serialiser.data}, status = status.HTTP_201_CREATED)
+            response = {
+                "status_code": status.HTTP_201_CREATED,
+                "message": "order created",
+                "data": order_response
+            }
+            return Response(response, status=status.HTTP_201_CREATED)
         else:
-            return Response({"error":serialiser.errors}, status = status.HTTP_400_BAD_REQUEST)
+            response = {
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "message": "bad request",
+                "error": razorpay_order_serializer.errors
+            }
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class TransactionAPIView(APIView):
+    
+    def post(self, request):
+        transaction_serializer = Transactionmodelserializer(data=request.data)
+        if transaction_serializer.is_valid():
+            rz_client.verify_payment_signature(
+                razorpay_payment_id = transaction_serializer.validated_data.get("payment_id"),
+                razorpay_order_id = transaction_serializer.validated_data.get("order_id"),
+                razorpay_signature = transaction_serializer.validated_data.get("signature")
+            )
+            transaction_serializer.save()
+            response = {
+                "status_code": status.HTTP_201_CREATED,
+                "message": "transaction created"
+            }
+            return Response(response, status=status.HTTP_201_CREATED)
+        else:
+            response = {
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "message": "bad request",
+                "error": transaction_serializer.errors
+            }
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)

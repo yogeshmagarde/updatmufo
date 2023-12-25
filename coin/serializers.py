@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import*
-
+from .models import User, Audio_Jockey, User_to_Audio_Jockey
 
 class clubownerSerializer(serializers.ModelSerializer):
     
@@ -88,3 +88,16 @@ class Audio_Jockey1Serializer(serializers.ModelSerializer):
         model = User_to_Audio_Jockey
         fields = ['to_Audio_Jockey','amount','created_date']
 
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['Name', 'coins']
+
+class VIPDataSerializer(serializers.Serializer):
+    from_User = serializers.CharField(source='from_User.Name')
+    coins = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+class CombinedTransactionHistorySerializer(serializers.Serializer):
+    vip_data = VIPDataSerializer(many=True)

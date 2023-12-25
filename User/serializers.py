@@ -2,7 +2,7 @@
 
 
 from rest_framework import serializers
-from .models import User,Follow,Social_media,claim_coins,Paymentgatway, Transaction
+from .models import*# User,Follow,Social_media,claim_coins,Transaction,Coins_club_ownerdaliyclaim,Coins_traderdaliyclaim,Jockey_club_ownerdaliyclaim,Audio_Jockeydaliyclaim
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -97,17 +97,35 @@ class SnapchatLoginSerializer(serializers.ModelSerializer):
 class CoinsclaimSerializer(serializers.ModelSerializer):
     class Meta:
         model = claim_coins
-        # fields = ('claim_coins','created_at')
+        fields = ('claim_coins','created_date')
+
+
+class Coins_club_ownerdaliyclaimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coinsclubownerdaliylogin
+        fields = ('claim_coins','created_date')
+
+class Coins_traderdaliyclaimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coins_traderdaliylogin
+        fields = ('claim_coins','created_date')
+
+class Audio_JockeydaliyclaimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Audiojockeyloigin
+        fields = ('claim_coins','created_date')
+
+
+class Jockey_club_ownerdaliyclaimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Jockeyclubownerlogin
         fields = ('claim_coins','created_date')
 
 
 
-class PaymentgatwaySerializer(serializers.ModelSerializer):
-    order_date = serializers.DateTimeField(format="%d %B %Y %I:%M %p")
-
-    class Meta:
-        model = Paymentgatway
-        fields = '__all__'
+class RazorpayOrderSerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    currency = serializers.CharField()
 
 class Transactionmodelserializer(serializers.ModelSerializer):
     class Meta:

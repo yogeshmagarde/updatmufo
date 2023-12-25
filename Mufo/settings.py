@@ -248,8 +248,8 @@ SIMPLE_JWT = {
 }
 
 
-#Razorpay
-RAZORPAY_PUBLIC_KEY = "rzp_test_JoZehf9GV6gZ1e"
-RAZORPAY_SECRET_KEY = "Cbepk8tV6VgfZwYCUjjWPgUR"
-# Razorpay_API_keys_id = config('Razorpay_API_keys_id')
-# Razorpay_Key_Secret = config('Razorpay_Key_Secret')
+RAZORPAY_PUBLIC_KEY = config('Razorpay_API_keys_id')
+RAZORPAY_SECRET_KEY = config('Razorpay_Key_Secret')
+
+# RAZORPAY_PUBLIC_KEY = "rzp_test_AlEgqY4agZICaT" #"rzp_test_JoZehf9GV6gZ1e"
+# RAZORPAY_SECRET_KEY = "1zejcztPkYi9d9y3QGsxof5Z"#"Cbepk8tV6VgfZwYCUjjWPgUR"

@@ -77,3 +77,7 @@ class ChatMessage(models.Model):
     receiver = models.ForeignKey(Common, on_delete=models.CASCADE, related_name='received_messages')
     timestamp = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
+
+
+
+

@@ -34,3 +34,4 @@ class Audio_Jockey(models.Model):
 
     def __str__(self):
         return self.Name
+

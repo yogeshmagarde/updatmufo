@@ -25,8 +25,13 @@ urlpatterns = [
     path("googlelogin/", Googlelogin.as_view(), name="Googlelogin"),
     path("Facebooklogin/", Facebooklogin.as_view(), name="Facebooklogin"),
     path("Snapchatlogin/", Snapchatlogin.as_view(), name="Facebooklogin"),
+    #task center
     path("Coinsclaim/", Coinsclaim.as_view(), name="Coinsclaim"),
-    path('pay/', Recharge.as_view()),
-    path('veriyfy/', Transection.as_view()),
+    path("Coinsclubownerclaim/", Coins_club_ownerdaliyclaim.as_view()),
+    path("Coinstraderclaim/", Coinstraderdaliyclaim.as_view()),
+    path("Jokeyclaim/", Jockey_club_ownerdaliyclaim.as_view()),
+    path("Audiojokeyclaim/", Audio_Jockeydaliyclaim.as_view()),
+    path('order_create/',RazorpayOrderAPIView.as_view()),
+    path('order_complete/', TransactionAPIView.as_view()),
    
 ]

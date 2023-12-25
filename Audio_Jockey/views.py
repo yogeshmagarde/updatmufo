@@ -186,3 +186,8 @@ class Alluser(APIView):
             serializer = UserSerializer(approved_users, many=True)
             return Response(serializer.data)
         return Response("No approved users found")
+    
+
+
+
+    

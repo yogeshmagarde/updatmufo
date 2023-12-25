@@ -7,3 +7,4 @@ admin.site.register(Coins_trader_to_Jockey_club_owner)
 admin.site.register(Coins_trader_to_User)
 admin.site.register(User_to_Audio_Jockey)
 
+

@@ -18,7 +18,7 @@ from Coins_club_owner.models import *
 from Coins_trader.models import *
 from Jockey_club_owner.models import *
 from master.models import *
-from datetime import *
+from Chat.models import *
 from datetime import *
 from django.utils import timezone
 class UserSpentTimeList(APIView):
@@ -149,19 +149,26 @@ class FollowUser(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, follow):
         try:
-            # date = request.data.get("date")
             date=datetime.today().date()
-            print("aaj",date)
             created_date = datetime.today()
-            following_common = Common.objects.get(uid=follow)  
+            following_common = Common.objects.get(uid=follow)
+
+            if following_common == request.user:
+                    return Response({"error": "following and Follow user cannot be the same user."}, status=status.HTTP_400_BAD_REQUEST)
+              
             follow_user, created = Follow1.objects.get_or_create(user=request.user,date = date, following_user=following_common)
             
             print("Follow User:", follow_user)
-            
             if not created:
                 follow_user.delete()
                 return Response({'success': True, 'message': 'Unfollowed user'})
             else:
+
+                Following_profile = Common.objects.get(token=request.user.token)
+                message = f"{Following_profile.Name} started following you!"
+                notification = Notificationupdate(user=following_common, message=message)
+                notification.save()
+
                 profiles = [Audio_Jockey, Coins_club_owner,Coins_trader, Jockey_club_owner, User]
                 for profile_model in profiles:
                        profile_data = profile_model.objects.filter(token=request.user.token).first()
@@ -178,6 +185,10 @@ class FollowUser(APIView):
                                     user_profile.coins += 10 
                                     user_profile.save()
                                     print(user_profile.coins)
+                                    common_profile = Common.objects.get(token=request.user.token)
+                                    message = f"You got {10} coins for following 10 users!"
+                                    notification = Notificationupdate(user=common_profile, message=message)
+                                    notification.save()
                                     Follow_claim_coins.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
                                 
@@ -193,7 +204,10 @@ class FollowUser(APIView):
                                     print(f"get {10} coins user account.")
                                     user_profile.coins += 10 
                                     user_profile.save()
-                                    print(user_profile.coins)
+                                    common_profile = Common.objects.get(token=request.user.token)
+                                    message = f"You got {10} coins for following 10 users!"
+                                    notification = Notificationupdate(user=common_profile, message=message)
+                                    notification.save()
                                     Audio_JockeyFollow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
                                 
@@ -209,7 +223,10 @@ class FollowUser(APIView):
                                     print(f"get {10} coins user account.")
                                     user_profile.coins += 10 
                                     user_profile.save()
-                                    print(user_profile.coins)
+                                    common_profile = Common.objects.get(token=request.user.token)
+                                    message = f"You got {10} coins for following 10 users!"
+                                    notification = Notificationupdate(user=common_profile, message=message)
+                                    notification.save()
                                     Jockey_club_owner_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
                                     
@@ -225,7 +242,10 @@ class FollowUser(APIView):
                                     print(f"get {10} coins user account.")
                                     user_profile.coins += 10 
                                     user_profile.save()
-                                    print(user_profile.coins)
+                                    common_profile = Common.objects.get(token=request.user.token)
+                                    message = f"You got {10} coins for following 10 users!"
+                                    notification = Notificationupdate(user=common_profile, message=message)
+                                    notification.save()
                                     Coins_club_owner_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)
                                 
@@ -241,7 +261,10 @@ class FollowUser(APIView):
                                     print(f"get {10} coins user account.")
                                     user_profile.coins += 10 
                                     user_profile.save()
-                                    print(user_profile.coins)
+                                    common_profile = Common.objects.get(token=request.user.token)
+                                    message = f"You got {10} coins for following 10 users!"
+                                    notification = Notificationupdate(user=common_profile, message=message)
+                                    notification.save()
                                     Coins_trader_Follow_claim.objects.create(user=request.user,created_date=created_date, claim_coins=True)
                                     return Response({'success':"claim success"}, status=status.HTTP_201_CREATED)     
                                 
@@ -426,7 +449,7 @@ class GiftTransfer(APIView):
                             sender_user.coins -= amount
                             sender_user.save()
                             GiftTransactionhistory.objects.create(sender=sender, receiver=receiver, amount=amount, created_date=datetime.today())
-                            return Response({"message": f"'{amount} $' Coins transferred successfully."}, status=status.HTTP_200_OK)
+                            return Response({"message": f"'{amount} $'{sender.Name}'{sender.usertype}Coins transferred successfully."}, status=status.HTTP_200_OK)
                         
                 return Response({"error": "Insufficient coins in the sender's account."}, status=status.HTTP_400_BAD_REQUEST)
             except Common.DoesNotExist:
@@ -434,4 +457,51 @@ class GiftTransfer(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
       
-# from django.utils import timezone  
+
+class Top_fans_listing_View(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            user = Common.objects.get(uid=request.user.uid)
+            month = request.query_params.get('month')
+
+            if month is not None:
+                print("monthly condition")
+                current_month_start = timezone.now().month
+                received_transactions = GiftTransactionhistory.objects.filter(receiver=user, created_date__month=current_month_start)
+
+            else:
+                print("lifetime condition")
+                received_transactions = GiftTransactionhistory.objects.filter(receiver=user)
+
+            sorted_transactions = received_transactions.order_by('-created_date')
+
+            total_coins_dict = {}
+
+            for transaction in sorted_transactions:
+                from_user_name = transaction.sender.Name
+                coins = transaction.amount
+                recieve = transaction.receiver.Name
+        
+
+                if from_user_name in total_coins_dict:
+                    total_coins_dict[from_user_name] += coins
+                else:
+                    total_coins_dict[from_user_name] = coins
+
+            data = sorted(
+                [{"Gift_sender": user, "coins": total_coins,"reciever": recieve} for user, total_coins in total_coins_dict.items()],
+                key=lambda x: x["coins"],
+                reverse=True
+            )
+
+            return Response({"Top_fan_list": data})
+
+        except Common.DoesNotExist:
+            return Response({'error': 'User not found.'})
+
+        except GiftTransactionhistory.DoesNotExist:
+            return Response({'error': 'No transactions received by User.'})
+
+        except Exception as e:
+            return Response({'error': str(e)})

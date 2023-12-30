@@ -7,4 +7,4 @@ from .models import *
 admin.site.register(Room)
 admin.site.register(Chat)
 admin.site.register(ChatMessage)
-admin.site.register(Notification)
+admin.site.register(Notificationupdate)

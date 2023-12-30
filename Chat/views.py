@@ -7,7 +7,8 @@ from rest_framework.response import Response
 
 from .permissions import RoomPermission
 from . import serializers
-from .models import Room, Chat,ChatMessage,Notification
+from .models import Room, Chat,ChatMessage,Notificationupdate
+from master.models import Common
 from .serializers import ChatMessageSerializer
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -34,7 +35,8 @@ class RoomViewSets(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         room_name = serializer.validated_data.get('room_name')
         serializer.save(creator=request.user) #Use the authenticated user
-        self.add_coins(request.user, 10)
+        common_profile = Common.objects.get(token=request.user.token)
+        self.add_coins(request.user, 10, common_profile)
         serializer.save(room_name=html.escape(room_name))
         return Response(
             {
@@ -44,17 +46,17 @@ class RoomViewSets(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    def add_coins(self, user, amount):
+    def add_coins(self, user, amount, common_profile):
             created_date = timezone.now()#datetime.today()
             today = room_create_claim_coins.objects.filter(user=user, created_date__date=created_date.date()).count()
             print(today)
-            if today<100:
+            if today<1:
                 user.coins += amount
                 user.save()
                 message = f"You got {amount} coins to create a chatroom!"
-                notification = Notification(user=user, message=message)
+                notification = Notificationupdate(user=common_profile, message=message)
                 notification.save()
-            room_create_claim_coins.objects.create(user=user,created_date=created_date,claim_coins=True)
+                room_create_claim_coins.objects.create(user=user,created_date=created_date,claim_coins=True)
            
 
 

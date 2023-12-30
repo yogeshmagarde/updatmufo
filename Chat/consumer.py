@@ -1,7 +1,7 @@
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Chat , Room , Visitor,ChatMessage,Notification
+from .models import Chat , Room , Visitor,ChatMessage,Notificationupdate
 from User.models import User,room_join_claim_coins
 from master.models import Common
 from bots import BotHandler
@@ -270,7 +270,11 @@ class ChatConsumer2(AsyncWebsocketConsumer):
     def add_coins(self, user, amount):
             user.coins += amount
             user.save()
-            v=room_join_claim_coins.objects.create(
+            common_profile = Common.objects.get(token=self.user.token)
+            message = f"You got {10} coins to join the chatroom!"
+            notification = Notificationupdate(user=common_profile, message=message)
+            notification.save()
+            room_join_claim_coins.objects.create(
             user=user,
             created_date=datetime.today(),
             claim_coins=True
@@ -679,26 +683,48 @@ class OnetoOneChatConsumer(AsyncWebsocketConsumer):
 
 
 
+
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.channel_layer.group_add("test_group", self.channel_name)
+        token = self.scope['query_string'].decode().split('=')[1]
+        print(token)
+        user = await self.get_user_from_token(token)
+
+        role_group_name = f"{user.uid}_group"
+        self.user_group_name = role_group_name
+        
+        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
         await self.accept()
-        await self.send(text_data=json.dumps({'status': 'connected Through Django Channels'}))
+        await self.send(text_data=json.dumps({'status': f"{user.usertype}_:-{user.Name}"}))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard("test_group", self.channel_name)
-    
+        await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+
     async def receive(self, text_data):
         print(text_data)
-        self.send(text_data=json.dumps({'status': 'We Got You'}))
+        
+        data = json.loads(text_data)
+        user_id = data.get('user_id')
+
+        await self.channel_layer.group_send(
+            self.user_group_name,
+            {
+                'type': 'send_notification',
+                'value': json.dumps({'status': 'We Got You'})
+            }
+        )
 
     async def send_notification(self, event):
-
         print("Sending notification:", event.get('value'))
-        
         value = json.loads(event.get('value'))
         await self.send(text_data=json.dumps({'value': value}))
-        
-   
 
-    #     await self.send(text_data=json.dumps({'notifications': notification_data}))
+    @database_sync_to_async
+    def get_user_from_token(self, token):
+        try:
+            if not token:
+                return None
+            return Common.objects.get(token=token)
+        except Common.DoesNotExist:
+            return None
+     

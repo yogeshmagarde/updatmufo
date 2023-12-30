@@ -10,5 +10,5 @@ websocket_urlpatterns = [
     path('ws/test/', consumer.TestConsumer.as_asgi()),
     path("ws/chatmessage/<str:room_name>/", consumer.OnetoOneChatConsumer.as_asgi()),
     path("ws/notifications/", consumer.NotificationConsumer.as_asgi()),
-    # path('ws/chatmessage/<int:user_id>/', consumer.ChatConsumer1.as_asgi()), 
+    
 ]

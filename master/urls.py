@@ -1,8 +1,4 @@
 from django.urls import path
-# from rest_framework_simplejwt.views import (
-#     TokenObtainPairView,
-#     TokenRefreshView,
-# )
 from . import views
 from .views import *
 
@@ -18,5 +14,5 @@ urlpatterns = [
     path('allcommonuser/', Alluser.as_view(), name="userview"),
     path('gift-transfer/', GiftTransfer.as_view(), name='coin-transfer'),
     path('user-spent-time/', UserSpentTimeList.as_view(), name='user-spent-time-list'),
-    # path('user-spent-time/<int:pk>/', UserSpentTimeDetail.as_view(), name='user-spent-time-detail'),
+    path('topfanlist/', Top_fans_listing_View.as_view(), name='topfanlist'),
 ]

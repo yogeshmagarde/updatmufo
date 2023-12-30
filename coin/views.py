@@ -758,6 +758,3 @@ class listofAudioJockey(APIView):
 
 
 
-
-# views.py
-

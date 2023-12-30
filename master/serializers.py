@@ -58,10 +58,10 @@ class CoinTransferSerializer(serializers.Serializer):
     receiver_uid = serializers.CharField()
     amount = serializers.IntegerField(min_value=0)
 
-class GiftTransactionhistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GiftTransactionhistory
-        fields = ['sender', 'receiver', 'amount', 'created_date']
+# class GiftTransactionhistorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = GiftTransactionhistory
+#         fields = ['sender', 'receiver', 'amount', 'created_date']
 
 class UserSpentTimeSerializer(serializers.ModelSerializer):
     class Meta:

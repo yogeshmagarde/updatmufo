@@ -1,13 +1,10 @@
 
-
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from Mufo.Minxins import *
 from .serializers import *
 from .razorpay import RazorpayClient
 rz_client = RazorpayClient()
-
-import razorpay
 from django.conf import settings
 import json
 
@@ -22,7 +19,6 @@ from datetime import timedelta
 
 from django.utils import timezone
 from datetime import timedelta
-
 from .models import User
 from Audio_Jockey.models import Audio_Jockey
 from Coins_club_owner.models import Coins_club_owner
@@ -36,6 +32,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework import filters
 from master.serializers import *
 from master.models import *
+from Chat.models import *
 import uuid
 from datetime import datetime
 
@@ -463,7 +460,6 @@ class Coinsclaim(APIView):
         serialiser = self.serialiser_class(data = request.data)
         if serialiser .is_valid():
             claim = serialiser.initial_data.get('claim_coins')
-            # created_at = serialiser.initial_data.get('created_at')
             created_at = datetime.today()#datetime.today()
             print('created_at',created_at)
             if claim:
@@ -475,6 +471,10 @@ class Coinsclaim(APIView):
                     user = User.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
+                    common_profile = Common.objects.get(token=request.user.token)
+                    message = f"You got {10} coins to logging in today!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
                     claim_coins.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
@@ -498,6 +498,10 @@ class Coins_club_ownerdaliyclaim(APIView):
                     user = Coins_club_owner.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
+                    common_profile = Common.objects.get(token=request.user.token)
+                    message = f"You got {10} coins to logging in today!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
                     Coinsclubownerdaliylogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
@@ -523,6 +527,10 @@ class Coinstraderdaliyclaim(APIView):
                     user = Coins_trader.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
+                    common_profile = Common.objects.get(token=request.user.token)
+                    message = f"You got {10} coins to logging in today!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
                     Coins_traderdaliylogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
@@ -547,6 +555,10 @@ class Jockey_club_ownerdaliyclaim(APIView):
                     user = Jockey_club_owner.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
+                    common_profile = Common.objects.get(token=request.user.token)
+                    message = f"You got {10} coins to logging in today!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
                     Jockeyclubownerlogin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
@@ -572,6 +584,10 @@ class Audio_Jockeydaliyclaim(APIView):
                     user = Audio_Jockey.objects.get(token=request.user.token)
                     user.coins += 10
                     user.save()
+                    common_profile = Common.objects.get(token=request.user.token)
+                    message = f"You got {10} coins to logging in today!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
                     Audiojockeyloigin.objects.create(user=request.user,created_date=created_at, claim_coins=True)
                     return Response({"data": f"{10}Coins added successfully"})
                 return Response({"data":"You have already claimed coins today."})
@@ -623,22 +639,42 @@ class TransactionAPIView(APIView):
                         user_profile = User.objects.get(token=request.user.token)
                         user_profile.coins += 1000 
                         user_profile.save()
+                        common_profile = Common.objects.get(token=request.user.token)
+                        message = f"You got {1000} coins on recharge of Rs 100!"
+                        notification = Notificationupdate(user=common_profile, message=message)
+                        notification.save()
                     elif isinstance(user_profile, Audio_Jockey):
                         user_profile = Audio_Jockey.objects.get(token=request.user.token)
                         user_profile.coins += 1000 
                         user_profile.save()
+                        common_profile = Common.objects.get(token=request.user.token)
+                        message = f"You got {1000} coins on recharge of Rs 100!"
+                        notification = Notificationupdate(user=common_profile, message=message)
+                        notification.save()
                     elif isinstance(user_profile, Jockey_club_owner):
                         user_profile = Jockey_club_owner.objects.get(token=request.user.token)
                         user_profile.coins += 1000 
                         user_profile.save()
+                        common_profile = Common.objects.get(token=request.user.token)
+                        message = f"You got {1000} coins on recharge of Rs 100!"
+                        notification = Notificationupdate(user=common_profile, message=message)
+                        notification.save()
                     elif isinstance(user_profile, Coins_trader):
                         user_profile = Coins_trader.objects.get(token=request.user.token)
                         user_profile.coins += 1000 
                         user_profile.save()
+                        common_profile = Common.objects.get(token=request.user.token)
+                        message = f"You got {1000} coins on recharge of Rs 100!"
+                        notification = Notificationupdate(user=common_profile, message=message)
+                        notification.save()
                     elif isinstance(user_profile, Coins_club_owner):
                         user_profile = Coins_club_owner.objects.get(token=request.user.token)
                         user_profile.coins += 1000 
                         user_profile.save()
+                        common_profile = Common.objects.get(token=request.user.token)
+                        message = f"You got {1000} coins on recharge of Rs 100!"
+                        notification = Notificationupdate(user=common_profile, message=message)
+                        notification.save()
             else:
                 return Response({"message": "Transaction processed, but no bonus coins added."}, status=status.HTTP_200_OK)        
             transaction_serializer.save()

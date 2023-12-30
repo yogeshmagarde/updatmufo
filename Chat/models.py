@@ -82,21 +82,23 @@ class ChatMessage(models.Model):
 
 
 
-class Notification(models.Model):
-    user = models.ForeignKey(Audio_Jockey, on_delete=models.CASCADE)
+class Notificationupdate(models.Model):
+    user = models.ForeignKey(Common, on_delete=models.CASCADE)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def save(self, *args, **kwargs):
-        print('saving notification')
+    def save(self, user_group_name=None, *args, **kwargs):
+        print('saving notificationi')
         channel_layer = get_channel_layer()
-        notification_objs = Notification.objects.filter(is_read=False).count()
+        notification_objs = Notificationupdate.objects.filter(is_read=False).count()
         data = {'count': notification_objs, 'current_notification': self.message}
+
+        user_group_name = f"{self.user.uid}_group"
         async_to_sync(channel_layer.group_send)(
-            "test_group", {
+            user_group_name, {
                 "type": "send_notification",
                 "value": json.dumps(data)
             }
         )
-        super(Notification, self).save(*args, **kwargs)
+        super(Notificationupdate, self).save(*args, **kwargs)

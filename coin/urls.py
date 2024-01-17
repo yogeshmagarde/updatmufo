@@ -19,15 +19,9 @@ urlpatterns = [
     path("userth/", UserTransactionHistoryView.as_view()),
     path("Audiojockeyth/", Audio_JockeyTransactionHistoryView.as_view()),
     path("jokyclubownerth/", Jockey_club_ownerTransactionHistoryView.as_view()),
-
-
-    path("Audio_Jockeytopfanslist/", Audio_JockeyTop_fans_listing_View.as_view()),
-    path("Usertopfanlist/", UserTop_fans_listing_View.as_view()),
-    path("Cointradertopfanslist/", CointraderTop_fans_listing_View.as_view()),
-    path("jokeyclubtopfanslist/", Jockey_club_ownerTop_fans_listing_View.as_view()),
-    
-    path("globletopfanslist/", Top_fans_listing_globle_View.as_view()),
+    path("audiojockeytoplist/",Top_fans_listing_globle_View.as_view()),
     path("listofAudioJockey/", listofAudioJockey.as_view()),
+    path("alluserpurchasehistory", AllUserpurchaseHistoryView.as_view()),
           
 
     

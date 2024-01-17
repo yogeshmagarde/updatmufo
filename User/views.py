@@ -21,6 +21,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import User
 from Audio_Jockey.models import Audio_Jockey
+from coin.models import Purchase_history
 from Coins_club_owner.models import Coins_club_owner
 from Coins_trader.models import Coins_trader
 from Jockey_club_owner.models import Jockey_club_owner
@@ -88,7 +89,7 @@ class Register(APIView):
             token = secrets.token_hex(128)
             uid = uuid.uuid1()
             usertype="User"
-            serializer.save(token =token,uid=uid,usertype=usertype)
+            serializer.save(token =token,uid=uid,usertype=usertype,Is_Approved=True)
             if serializer1.is_valid():
                 serializer1.save(token =token,uid=uid,usertype=usertype,Is_Approved=True)
             return Response({'data': str(serializer.data), 'access': str(token), 'message': "Register successfully"}, status=status.HTTP_201_CREATED)
@@ -128,7 +129,7 @@ class Login(APIView):
             user.Otpcreated_at = current_time + timedelta(minutes=5)
 
         user.save()
-        send_otp_on_phone(user.phone, user.otp)
+        # send_otp_on_phone(user.phone, user.otp)
         return Response({'uid': str(user.uid), 'otp': str(user.otp), 'message': "Otp sent successfully"})
 
 
@@ -619,72 +620,122 @@ class RazorpayOrderAPIView(APIView):
 
 
 
+# class TransactionAPIView(APIView):
+#     @method_decorator(authenticate_token)
+#     def post(self, request):
+#         transaction_serializer = Transactionmodelserializer(data=request.data)
+#         if transaction_serializer.is_valid():
+#             rz_client.verify_payment_signature(
+#                 razorpay_payment_id = transaction_serializer.validated_data.get("payment_id"),
+#                 razorpay_order_id = transaction_serializer.validated_data.get("order_id"),
+#                 razorpay_signature = transaction_serializer.validated_data.get("signature")
+#             )
+            
+#             amount = transaction_serializer.validated_data.get("amount")
+#             ruppees=amount//100
+#             coin_s= ruppees*10
+#             print("ruppees",ruppees)
+#             print("coin_s",coin_s)
+#             created_date = datetime.today()
+#             if amount == 10000:
+#                 profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+#                 for profile_model in profiles:
+#                     user_profile = profile_model.objects.filter(token=request.user.token).first()
+#                     if isinstance(user_profile, User):
+#                         user_profile = User.objects.get(token=request.user.token)
+#                         user_profile.coins += 1000
+#                         user_profile.save()
+#                         common_profile = Common.objects.get(token=request.user.token)
+#                         message = f"You got {1000} coins on recharge of Rs 100!"
+#                         notification = Notificationupdate(user=common_profile, message=message)
+#                         notification.save()
+#                         Purchase_history.objects.create(user=common_profile,created_date=created_date, claim_coins=True)
+#                     elif isinstance(user_profile, Audio_Jockey):
+#                         user_profile = Audio_Jockey.objects.get(token=request.user.token)
+#                         user_profile.coins += 1000 
+#                         user_profile.save()
+#                         common_profile = Common.objects.get(token=request.user.token)
+#                         message = f"You got {1000} coins on recharge of Rs 100!"
+#                         notification = Notificationupdate(user=common_profile, message=message)
+#                         notification.save()
+#                         Purchase_history.objects.create(user=common_profile,created_date=created_date, claim_coins=True)
+#                     elif isinstance(user_profile, Jockey_club_owner):
+#                         user_profile = Jockey_club_owner.objects.get(token=request.user.token)
+#                         user_profile.coins += 1000 
+#                         user_profile.save()
+#                         common_profile = Common.objects.get(token=request.user.token)
+#                         message = f"You got {1000} coins on recharge of Rs 100!"
+#                         notification = Notificationupdate(user=common_profile, message=message)
+#                         notification.save()
+#                         Purchase_history.objects.create(user=common_profile,created_date=created_date, claim_coins=True)
+#                     elif isinstance(user_profile, Coins_trader):
+#                         user_profile = Coins_trader.objects.get(token=request.user.token)
+#                         user_profile.coins += 1000 
+#                         user_profile.save()
+#                         common_profile = Common.objects.get(token=request.user.token)
+#                         message = f"You got {1000} coins on recharge of Rs 100!"
+#                         notification = Notificationupdate(user=common_profile, message=message)
+#                         notification.save()
+#                         Purchase_history.objects.create(user=common_profile,created_date=created_date, claim_coins=True)
+#                     elif isinstance(user_profile, Coins_club_owner):
+#                         user_profile = Coins_club_owner.objects.get(token=request.user.token)
+#                         user_profile.coins += 1000 
+#                         user_profile.save()
+#                         common_profile = Common.objects.get(token=request.user.token)
+#                         message = f"You got {1000} coins on recharge of Rs 100!"
+#                         notification = Notificationupdate(user=common_profile, message=message)
+#                         notification.save()
+#                         Purchase_history.objects.create(user=common_profile,created_date=created_date, claim_coins=True)
+#             else:
+#                 return Response({"message": "Transaction processed, but no bonus coins added."}, status=status.HTTP_200_OK)        
+#             transaction_serializer.save()
+            
+#             return Response({"message": "transaction created"}, status=status.HTTP_201_CREATED)
+#         else:
+#             response = {
+#                 "status_code": status.HTTP_400_BAD_REQUEST,
+#                 "message": "bad request",
+#                 "error": transaction_serializer.errors
+#             }
+#             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+  
 class TransactionAPIView(APIView):
     @method_decorator(authenticate_token)
     def post(self, request):
         transaction_serializer = Transactionmodelserializer(data=request.data)
         if transaction_serializer.is_valid():
-            rz_client.verify_payment_signature(
-                razorpay_payment_id = transaction_serializer.validated_data.get("payment_id"),
-                razorpay_order_id = transaction_serializer.validated_data.get("order_id"),
-                razorpay_signature = transaction_serializer.validated_data.get("signature")
-            )
+            try:
+                rz_client.verify_payment_signature(
+                    razorpay_payment_id=transaction_serializer.validated_data.get("payment_id"),
+                    razorpay_order_id=transaction_serializer.validated_data.get("order_id"),
+                    razorpay_signature=transaction_serializer.validated_data.get("signature")
+                )
+            except Exception as e:
+                return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
             
             amount = transaction_serializer.validated_data.get("amount")
-            if amount == 10000:
-                profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
-                for profile_model in profiles:
-                    user_profile = profile_model.objects.filter(token=request.user.token).first()
-                    if isinstance(user_profile, User):
-                        user_profile = User.objects.get(token=request.user.token)
-                        user_profile.coins += 1000 
-                        user_profile.save()
-                        common_profile = Common.objects.get(token=request.user.token)
-                        message = f"You got {1000} coins on recharge of Rs 100!"
-                        notification = Notificationupdate(user=common_profile, message=message)
-                        notification.save()
-                    elif isinstance(user_profile, Audio_Jockey):
-                        user_profile = Audio_Jockey.objects.get(token=request.user.token)
-                        user_profile.coins += 1000 
-                        user_profile.save()
-                        common_profile = Common.objects.get(token=request.user.token)
-                        message = f"You got {1000} coins on recharge of Rs 100!"
-                        notification = Notificationupdate(user=common_profile, message=message)
-                        notification.save()
-                    elif isinstance(user_profile, Jockey_club_owner):
-                        user_profile = Jockey_club_owner.objects.get(token=request.user.token)
-                        user_profile.coins += 1000 
-                        user_profile.save()
-                        common_profile = Common.objects.get(token=request.user.token)
-                        message = f"You got {1000} coins on recharge of Rs 100!"
-                        notification = Notificationupdate(user=common_profile, message=message)
-                        notification.save()
-                    elif isinstance(user_profile, Coins_trader):
-                        user_profile = Coins_trader.objects.get(token=request.user.token)
-                        user_profile.coins += 1000 
-                        user_profile.save()
-                        common_profile = Common.objects.get(token=request.user.token)
-                        message = f"You got {1000} coins on recharge of Rs 100!"
-                        notification = Notificationupdate(user=common_profile, message=message)
-                        notification.save()
-                    elif isinstance(user_profile, Coins_club_owner):
-                        user_profile = Coins_club_owner.objects.get(token=request.user.token)
-                        user_profile.coins += 1000 
-                        user_profile.save()
-                        common_profile = Common.objects.get(token=request.user.token)
-                        message = f"You got {1000} coins on recharge of Rs 100!"
-                        notification = Notificationupdate(user=common_profile, message=message)
-                        notification.save()
-            else:
-                return Response({"message": "Transaction processed, but no bonus coins added."}, status=status.HTTP_200_OK)        
+            rupees = amount // 100
+            coins = rupees * 10
+
+            created_date = datetime.today()
+            common_profile = Common.objects.get(token=request.user.token)
+            user_profiles = [User,Audio_Jockey,Jockey_club_owner,Coins_trader,Coins_club_owner]
+            for model_class in user_profiles:
+                user_profile = model_class.objects.filter(token=request.user.token).first()
+                if isinstance(user_profile, model_class):
+                    print("user_profile",user_profile)
+                    user_profile.coins += coins
+                    user_profile.save()
+                    message = f"You got {coins} coins on recharge of Rs {rupees}!"
+                    notification = Notificationupdate(user=common_profile, message=message)
+                    notification.save()
+
+                    Purchase_history.objects.create(user=common_profile, created_date=created_date, claim_coins=message)
+
             transaction_serializer.save()
-            
-            return Response({"message": "transaction created"}, status=status.HTTP_201_CREATED)
+
+            return Response({"message": "Transaction created"}, status=status.HTTP_201_CREATED)
         else:
-            response = {
-                "status_code": status.HTTP_400_BAD_REQUEST,
-                "message": "bad request",
-                "error": transaction_serializer.errors
-            }
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({"message": "Bad request", "error": transaction_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

@@ -45,8 +45,6 @@ class Follow_claim_coins(models.Model):
     created_date = models.DateTimeField(default=now)
     def __str__(self):
         return str(self.user)+"          "+ str(self.created_date)
-    
-
 
 class Audio_JockeyFollow_claim(models.Model):
     user = models.ForeignKey(Common, on_delete=models.CASCADE)

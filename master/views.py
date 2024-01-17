@@ -144,7 +144,7 @@ class UserSpentTimeList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+'''
 class FollowUser(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, follow):
@@ -271,7 +271,59 @@ class FollowUser(APIView):
                 return Response({'success': True, 'message': 'Followed user'})
         except Common.DoesNotExist:
             return Response({'success': False, 'message': 'User does not exist.'})
-        
+'''
+class FollowUser(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, follow):
+        try:
+            date = datetime.today().date()
+            created_date = datetime.today()
+            following_common = Common.objects.get(uid=follow)
+
+            # Check if the user is trying to follow themselves
+            if following_common == request.user:
+                return Response({"error": "Following and Follow user cannot be the same user."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the follow relationship already exists
+            follow_user, created = Follow1.objects.get_or_create(user=request.user, date=date, following_user=following_common)
+
+            if not created:
+                # Unfollow the user
+                follow_user.delete()
+                return Response({'success': True, 'message': 'Unfollowed user'})
+            else:
+                # Notify the user being followed
+                message = f"{Common.objects.get(token=request.user.token).Name} started following you!"
+                notification = Notificationupdate(user=following_common, message=message)
+                notification.save()
+
+                # Define user profiles for iteration
+                profiles = [Audio_Jockey, Coins_club_owner, Coins_trader, Jockey_club_owner, User]
+                claim_coins = 10
+                for profile_model in profiles:
+                    profile_data = profile_model.objects.filter(token=request.user.token).first()
+
+                    if isinstance(profile_data, profile_model):
+                        today_follow_user = Follow1.objects.filter(user=request.user, date=date).count()
+                        today_claim= Follow_claim_coins.objects.filter(user=request.user,created_date__date=created_date.date()).count() 
+
+                        # Check if the conditions are met for awarding coins
+                        if today_follow_user == 10 and today_claim< 1:
+                            user_profile = profile_model.objects.get(token=request.user.token)
+                            user_profile.coins += claim_coins
+                            user_profile.save()
+
+                            common_profile = Common.objects.get(token=request.user.token)
+                            message = f"You got {claim_coins} coins for following 10 users!"
+                            notification = Notificationupdate(user=common_profile, message=message)
+                            notification.save()
+
+                            Follow_claim_coins.objects.create(user=request.user, created_date=created_date, claim_coins=True)
+                            return Response({'success': "claim success"}, status=status.HTTP_201_CREATED)
+
+                return Response({'success': True, 'message': 'Followed user'})
+        except Common.DoesNotExist:
+            return Response({'success': False, 'message': 'User does not exist.'})
     
 class FollowerList(APIView):
     @method_decorator(authenticate_token)
@@ -439,6 +491,9 @@ class GiftTransfer(APIView):
                         receipient = receiver_profile.first()
                         receipient.coins += amount
                         receipient.save()
+                        message = f"You received a gift of {amount} coins from {sender.Name}!"
+                        notification = Notificationupdate(user=receiver, message=message)
+                        notification.save()
                         print(receipient.coins, "receipient.coins")
 
                 for profile_model in profiles:
@@ -480,6 +535,8 @@ class Top_fans_listing_View(APIView):
 
             for transaction in sorted_transactions:
                 from_user_name = transaction.sender.Name
+                profile = transaction.sender.profile_picture
+                uid = transaction.sender.uid
                 coins = transaction.amount
                 recieve = transaction.receiver.Name
         
@@ -487,10 +544,15 @@ class Top_fans_listing_View(APIView):
                 if from_user_name in total_coins_dict:
                     total_coins_dict[from_user_name] += coins
                 else:
-                    total_coins_dict[from_user_name] = coins
-
+                    total_coins_dict[from_user_name] = {
+                        "Gift_sender": from_user_name,
+                        "profile_picture": transaction.sender.profile_picture,
+                        "uid": transaction.sender.uid,
+                        "coins": coins,
+                        "reciever": recieve,
+                    }
             data = sorted(
-                [{"Gift_sender": user, "coins": total_coins,"reciever": recieve} for user, total_coins in total_coins_dict.items()],
+                list(total_coins_dict.values()),
                 key=lambda x: x["coins"],
                 reverse=True
             )
@@ -505,3 +567,92 @@ class Top_fans_listing_View(APIView):
 
         except Exception as e:
             return Response({'error': str(e)})
+        
+
+class TopUserListView(APIView):
+    def get(self, request, id=None):
+        try:
+            Daliy = request.query_params.get('Daliy')
+            weekly = request.query_params.get('weekly')
+            month = request.query_params.get('month')
+            commonuser = Common.objects.all()
+            # total_coins_dict = {}
+            total_coins_dict = {commonuser.Name: 0 for commonuser in commonuser}
+            
+
+            for commonuser in commonuser:
+                if month is not None:
+                    print("monthly condition")
+                    current_month_start = timezone.now().month
+                    received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser, created_date__month=current_month_start)
+                
+                elif Daliy is not None:
+                    print("Daliy condition")
+                    today = datetime.today()
+                    received_transactions = GiftTransactionhistory.objects.filter(created_date__date=today.date())
+                
+                elif weekly is not None:
+                    print("weekly condition")
+                    last_week = datetime.today() - timedelta(days=7)
+                    received_transactions = GiftTransactionhistory.objects.filter(created_date__gte=last_week)
+                    
+                else:
+                    print("lifetime condition")
+                    received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser)
+                sorted_transactions = received_transactions.order_by('-created_date')
+                # print(sorted_transactions)
+                for transaction in sorted_transactions:
+                    from_user_name = transaction.sender.Name
+                    coins = transaction.amount
+                    profile = transaction.sender.profile_picture
+                    uid = transaction.sender.uid
+
+
+                    if from_user_name in total_coins_dict:
+                        total_coins_dict[from_user_name] += coins
+                    else:
+                        total_coins_dict[from_user_name] = coins
+            print("total_coins_dict",total_coins_dict)
+            vip_data = sorted(
+                [{"Sender_user": user, "coins": total_coins,"profile_picture":profile,"uid":uid} for user, total_coins in total_coins_dict.items()],
+                key=lambda x: x["coins"],
+                reverse=True
+            )
+            return Response({"top_list_user": vip_data})
+
+        except GiftTransactionhistory.DoesNotExist:
+            return Response({'error': 'No transactions received by any user.'})
+
+        except Exception as e:
+            return Response({'error': str(e)})
+
+
+class ApprovedByAdminAllUser(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request):
+        response_data = {}
+
+        user_types = {
+            'AudioJockey': Audio_Jockey,
+            'Jockeyclubowner': Jockey_club_owner,
+            'Coinstrader': Coins_trader,
+            'Coinsclubowner': Coins_club_owner,
+        }
+
+        for param, model in user_types.items():
+            is_approved = request.query_params.get(param)
+            if is_approved is not None:
+                is_approved = is_approved.lower() == 'true'
+                approved_users = model.objects.filter(Is_Approved=is_approved)
+                user_serializer = AllCoinsTraderSerializer(approved_users, many=True)
+                print("user_serializer",user_serializer)
+
+                data_list = [{'id': user_data.get('id'),'Name': user_data.get('Name'),'phone': user_data.get('phone'),'uid':user_data.get('uid'),'profile_picture':user_data.get('profile_picture')}for user_data in user_serializer.data]
+
+                model_name = model.__name__
+                response_data[model_name] = data_list
+
+        if not any(response_data):
+            return Response({'error': 'Users parameter is missing or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(response_data, status=status.HTTP_200_OK)

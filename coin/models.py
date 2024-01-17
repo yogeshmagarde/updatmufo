@@ -41,7 +41,9 @@ class User_to_Audio_Jockey(models.Model):
     created_date = models.DateTimeField(default=now)
 
 
-# class Top_Fan_list(models.Model):
-#     receiver = models.ForeignKey(Common, on_delete=models.PROTECT, related_name='received_transactions')
-#     amount = models.PositiveIntegerField()
-#     created_date = models.DateTimeField(default=now)
+class Purchase_history(models.Model):
+    user = models.ForeignKey(Common, on_delete=models.CASCADE)
+    claim_coins = models.CharField(max_length=100)
+    created_date = models.DateTimeField(default=now)
+    def __str__(self):
+        return str(self.user)

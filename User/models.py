@@ -122,3 +122,4 @@ class Coinsclubownerdaliylogin(models.Model):
     def __str__(self):
         return str(self.user)
    
+

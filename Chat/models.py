@@ -89,11 +89,11 @@ class Notificationupdate(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, user_group_name=None, *args, **kwargs):
-        print('saving notificationi')
+        # print('saving notificationi')
         channel_layer = get_channel_layer()
         notification_objs = Notificationupdate.objects.filter(is_read=False).count()
         data = {'count': notification_objs, 'current_notification': self.message}
-
+        print(f'saving notification:{self.message}')
         user_group_name = f"{self.user.uid}_group"
         async_to_sync(channel_layer.group_send)(
             user_group_name, {

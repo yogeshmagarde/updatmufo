@@ -2,6 +2,11 @@ from rest_framework import serializers
 from master.models import *
 from django.utils import timezone
 
+from Coins_trader.models import Coins_trader
+from Coins_club_owner.models import Coins_club_owner
+from Jockey_club_owner.serializers import Jockey_club_owner
+from Audio_Jockey.serializers import Audio_Jockey
+
 class masterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Common
@@ -76,3 +81,28 @@ class UserSpentTimeSerializer(serializers.ModelSerializer):
         representation['created_date'] = created_date.strftime('%Y-%m-%d %H:%M:%S')
 
         return representation
+    
+
+    
+    
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coins_trader
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Audio_Jockey
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Jockey_club_owner
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coins_club_owner
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+

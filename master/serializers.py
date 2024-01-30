@@ -61,6 +61,7 @@ class UserSearchSerializer(serializers.ModelSerializer):
 
 class CoinTransferSerializer(serializers.Serializer):
     receiver_uid = serializers.CharField()
+    # date = serializers.CharField()
     amount = serializers.IntegerField(min_value=0)
 
 # class GiftTransactionhistorySerializer(serializers.ModelSerializer):
@@ -91,18 +92,23 @@ class AllCoinsTraderSerializer(serializers.ModelSerializer):
         model = Coins_trader
         fields = ('id', 'Name', 'phone','profile_picture','uid',)
 
-class AllCoinsTraderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Audio_Jockey
-        fields = ('id', 'Name', 'phone','profile_picture','uid',)
 
-class AllCoinsTraderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Jockey_club_owner
-        fields = ('id', 'Name', 'phone','profile_picture','uid',)
 
 class AllCoinsTraderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coins_club_owner
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Audio_Jockey
+        fields = ('id', 'Name', 'phone','profile_picture','uid',)
+        
+
+
+class AllCoinsTraderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Jockey_club_owner
         fields = ('id', 'Name', 'phone','profile_picture','uid',)
 

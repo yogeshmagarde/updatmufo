@@ -731,9 +731,7 @@ class TransactionAPIView(APIView):
                     message = f"You got {coins} coins on recharge of Rs {rupees}!"
                     notification = Notificationupdate(user=common_profile, message=message)
                     notification.save()
-
                     Purchase_history.objects.create(user=common_profile, created_date=created_date, claim_coins=message)
-
             transaction_serializer.save()
 
             return Response({"message": "Transaction created"}, status=status.HTTP_201_CREATED)

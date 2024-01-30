@@ -1,6 +1,8 @@
 
 from django.utils.timezone import now
 from datetime import datetime
+import pytz
+
 # Create your views here.
 from django.shortcuts import render
 from rest_framework.views import APIView
@@ -21,6 +23,7 @@ from master.models import *
 from Chat.models import *
 from datetime import *
 from django.utils import timezone
+from django.core.serializers import serialize
 class UserSpentTimeList(APIView):
     def seconds_to_hms(self,seconds):
         hours, remainder = divmod(seconds, 3600)
@@ -308,7 +311,7 @@ class FollowUser(APIView):
                         today_claim= Follow_claim_coins.objects.filter(user=request.user,created_date__date=created_date.date()).count() 
 
                         # Check if the conditions are met for awarding coins
-                        if today_follow_user == 10 and today_claim< 1:
+                        if today_follow_user == 2 and today_claim< 1:
                             user_profile = profile_model.objects.get(token=request.user.token)
                             user_profile.coins += claim_coins
                             user_profile.save()
@@ -320,7 +323,6 @@ class FollowUser(APIView):
 
                             Follow_claim_coins.objects.create(user=request.user, created_date=created_date, claim_coins=True)
                             return Response({'success': "claim success"}, status=status.HTTP_201_CREATED)
-
                 return Response({'success': True, 'message': 'Followed user'})
         except Common.DoesNotExist:
             return Response({'success': False, 'message': 'User does not exist.'})
@@ -460,6 +462,62 @@ class Searchalluser(ListAPIView):
                 user=user, following_user=user_obj).exists()
         return queryset
 
+# class cointraderSearchalluser(ListAPIView):
+#     serializer_class = AllCoinsTraderSerializer#UserSearchSerializer
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ['Name', 'email']
+
+#     @method_decorator(authenticate_token)
+#     def get(self, request, *args, **kwargs):
+#         queryset = self.filter_queryset(self.get_queryset())
+#         serializer = self.get_serializer(queryset, many=True)
+#         return Response(serializer.data)
+
+#     def get_queryset(self):
+#         queryset = Common.objects.exclude(id=self.request.user.id)
+#         print(queryset)
+#         user = self.request.user
+#         queryset = queryset.filter(Is_Approved=True)
+#         queryset = self.annotate_following(queryset, user)
+
+#         # if user:
+#         #     queryset = self.annotate_following(queryset, user)
+            
+#         return queryset
+
+#     def annotate_following(self, queryset, user):
+#         for user_obj in queryset:
+#             user_obj.is_following = Follow1.objects.filter(
+#                 user=user, following_user=user_obj).exists()
+#         return queryset
+
+
+class Coins_club_ownerSearchAllUser(ListAPIView):
+    queryset = Coins_club_owner.objects.all()
+    serializer_class = AllCoinsTraderSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['Name', 'email']
+
+class Coins_traderSearchAllUser(ListAPIView):
+    queryset = Coins_trader.objects.all()
+    serializer_class = AllCoinsTraderSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['Name', 'email']
+
+class Audio_JockeySearchAllUser(ListAPIView):
+    queryset = Audio_Jockey.objects.all()
+    serializer_class = AllCoinsTraderSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['Name', 'email']
+
+class Jockey_club_ownerSearchAllUser(ListAPIView):
+    queryset = Jockey_club_owner.objects.all()
+    serializer_class = AllCoinsTraderSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['Name', 'email']
+
+
+
 class Alluser(APIView):
     def get(self, request):
         data=Common.objects.all()
@@ -475,6 +533,7 @@ class GiftTransfer(APIView):
         if serializer.is_valid():
             receiver_uid = serializer.validated_data['receiver_uid']
             amount = serializer.validated_data['amount']
+            # Date = serializer.validated_data['date']
 
             try:
                 receiver = Common.objects.get(uid=receiver_uid)
@@ -503,28 +562,45 @@ class GiftTransfer(APIView):
                         if sender_user.coins >= amount:
                             sender_user.coins -= amount
                             sender_user.save()
-                            GiftTransactionhistory.objects.create(sender=sender, receiver=receiver, amount=amount, created_date=datetime.today())
+
+                            # input_date_str = date
+                            # input_date = datetime.strptime(input_date_str, '%d-%m-%Y')
+                            Date = datetime.today()
+                            current_time = Date
+                            # Date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+                            # utc_tz = pytz.timezone('UTC')
+                            # ist_tz = pytz.timezone('Asia/Kolkata')
+                            # last_week_utc = utc_tz.localize(Date)
+                            # # Convert 'last_week_utc' to IST
+                            # current_time = last_week_utc.astimezone(ist_tz)
+                            # print("IST:", current_time)
+                            GiftTransactionhistory.objects.create(sender=sender, receiver=receiver, amount=amount, created_date = current_time)
                             return Response({"message": f"'{amount} $'{sender.Name}'{sender.usertype}Coins transferred successfully."}, status=status.HTTP_200_OK)
-                        
-                return Response({"error": "Insufficient coins in the sender's account."}, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            return Response({"message": f"Less than '{amount} $' coins are available in the '{sender.Name}' {sender.usertype} account. That's why the gift transfer failed."},status=status.HTTP_200_OK)
+ 
+                return Response({"error": "Insufficient coins in the sender's account ."}, status=status.HTTP_400_BAD_REQUEST)
             except Common.DoesNotExist:
                 return Response({"error": f"User with UID '{receiver_uid}' not found."}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
       
-
 class Top_fans_listing_View(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, id=None):
         try:
             user = Common.objects.get(uid=request.user.uid)
             month = request.query_params.get('month')
+            year =  request.query_params.get('year')
 
             if month is not None:
                 print("monthly condition")
-                current_month_start = timezone.now().month
-                received_transactions = GiftTransactionhistory.objects.filter(receiver=user, created_date__month=current_month_start)
-
+                # current_month_start = timezone.now().month
+                current_month = int(month)#timezone.now().month
+                current_year = int(year)#2009#timezone.now().year
+                received_transactions = GiftTransactionhistory.objects.filter(receiver=user,created_date__month=current_month,created_date__year=current_year)
+                # received_transactions = GiftTransactionhistory.objects.filter(receiver=user, created_date__month=current_month_start)
+                print("received_transactions",received_transactions)
             else:
                 print("lifetime condition")
                 received_transactions = GiftTransactionhistory.objects.filter(receiver=user)
@@ -535,22 +611,24 @@ class Top_fans_listing_View(APIView):
 
             for transaction in sorted_transactions:
                 from_user_name = transaction.sender.Name
-                profile = transaction.sender.profile_picture
-                uid = transaction.sender.uid
                 coins = transaction.amount
                 recieve = transaction.receiver.Name
-        
 
-                if from_user_name in total_coins_dict:
-                    total_coins_dict[from_user_name] += coins
+                # Create a unique key for each user based on their uid
+                user_key = f"{from_user_name}_{transaction.sender.uid}"
+
+                # Check if the user_key is already in total_coins_dict
+                if user_key in total_coins_dict:
+                    total_coins_dict[user_key]["coins"] += coins
                 else:
-                    total_coins_dict[from_user_name] = {
-                        "Gift_sender": from_user_name,
-                        "profile_picture": transaction.sender.profile_picture,
+                    total_coins_dict[user_key] = {
+                        "sender_name": from_user_name,
+                        "sender_profile_picture": transaction.sender.profile_picture,
                         "uid": transaction.sender.uid,
                         "coins": coins,
                         "reciever": recieve,
                     }
+
             data = sorted(
                 list(total_coins_dict.values()),
                 key=lambda x: x["coins"],
@@ -567,64 +645,63 @@ class Top_fans_listing_View(APIView):
 
         except Exception as e:
             return Response({'error': str(e)})
+
         
 
-class TopUserListView(APIView):
-    def get(self, request, id=None):
-        try:
-            Daliy = request.query_params.get('Daliy')
-            weekly = request.query_params.get('weekly')
-            month = request.query_params.get('month')
-            commonuser = Common.objects.all()
-            # total_coins_dict = {}
-            total_coins_dict = {commonuser.Name: 0 for commonuser in commonuser}
+# class TopUserListView(APIView):
+#     def get(self, request, id=None):
+#         try:
+#             Daliy = request.query_params.get('Daliy')
+#             weekly = request.query_params.get('weekly')
+#             month = request.query_params.get('month')
+#             commonuser = Common.objects.all()
+#             # total_coins_dict = {}
+#             total_coins_dict = {commonuser.Name: 0 for commonuser in commonuser}
             
 
-            for commonuser in commonuser:
-                if month is not None:
-                    print("monthly condition")
-                    current_month_start = timezone.now().month
-                    received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser, created_date__month=current_month_start)
+#             for commonuser in commonuser:
+#                 if month is not None:
+#                     print("monthly condition")
+#                     current_month_start = timezone.now().month
+#                     received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser, created_date__month=current_month_start)
                 
-                elif Daliy is not None:
-                    print("Daliy condition")
-                    today = datetime.today()
-                    received_transactions = GiftTransactionhistory.objects.filter(created_date__date=today.date())
+#                 elif Daliy is not None:
+#                     print("Daliy condition")
+#                     today = datetime.today()
+#                     received_transactions = GiftTransactionhistory.objects.filter(created_date__date=today.date())
                 
-                elif weekly is not None:
-                    print("weekly condition")
-                    last_week = datetime.today() - timedelta(days=7)
-                    received_transactions = GiftTransactionhistory.objects.filter(created_date__gte=last_week)
+#                 elif weekly is not None:
+#                     print("weekly condition")
+#                     last_week = datetime.today() - timedelta(days=7)
+#                     received_transactions = GiftTransactionhistory.objects.filter(created_date__gte=last_week)
                     
-                else:
-                    print("lifetime condition")
-                    received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser)
-                sorted_transactions = received_transactions.order_by('-created_date')
-                # print(sorted_transactions)
-                for transaction in sorted_transactions:
-                    from_user_name = transaction.sender.Name
-                    coins = transaction.amount
-                    profile = transaction.sender.profile_picture
-                    uid = transaction.sender.uid
+#                 else:
+#                     print("lifetime condition")
+#                     received_transactions = GiftTransactionhistory.objects.filter(receiver=commonuser)
+#                 sorted_transactions = received_transactions.order_by('-created_date')
+#                 # print(sorted_transactions)
+#                 for transaction in sorted_transactions:
+#                     from_user_name = transaction.sender.Name
 
+#                     coins = transaction.amount
+                    
+#                     if from_user_name in total_coins_dict:
+#                         total_coins_dict[from_user_name] += coins
+#                     else:
+#                         total_coins_dict[from_user_name] = coins
+#             print("total_coins_dict",total_coins_dict)
+#             vip_data = sorted(
+#                 [{"Sender_user": user, "coins": total_coins,} for user, total_coins in total_coins_dict.items()],
+#                 key=lambda x: x["coins"],
+#                 reverse=True
+#             )
+#             return Response({"top_list_user": vip_data})
 
-                    if from_user_name in total_coins_dict:
-                        total_coins_dict[from_user_name] += coins
-                    else:
-                        total_coins_dict[from_user_name] = coins
-            print("total_coins_dict",total_coins_dict)
-            vip_data = sorted(
-                [{"Sender_user": user, "coins": total_coins,"profile_picture":profile,"uid":uid} for user, total_coins in total_coins_dict.items()],
-                key=lambda x: x["coins"],
-                reverse=True
-            )
-            return Response({"top_list_user": vip_data})
+#         except GiftTransactionhistory.DoesNotExist:
+#             return Response({'error': 'No transactions received by any user.'})
 
-        except GiftTransactionhistory.DoesNotExist:
-            return Response({'error': 'No transactions received by any user.'})
-
-        except Exception as e:
-            return Response({'error': str(e)})
+#         except Exception as e:
+#             return Response({'error': str(e)})
 
 
 class ApprovedByAdminAllUser(APIView):
@@ -656,3 +733,110 @@ class ApprovedByAdminAllUser(APIView):
             return Response({'error': 'Users parameter is missing or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+
+
+
+class TopUserListView(APIView):
+    def get(self, request, id=None):
+        try:
+            Daliy = request.query_params.get('Daliy')
+            weekly = request.query_params.get('weekly')
+            month = request.query_params.get('month')
+            commonusers = Common.objects.all()
+            total_coins_dict = {commonuser.Name: {"coins": 0, "profile_picture": commonuser.profile_picture, "uid": commonuser.uid} for commonuser in commonusers}
+
+            for commonuser in commonusers:
+                if Daliy is not None:
+                    print("Daliy condition")
+                    today = datetime.today()
+                    received_transactions = GiftTransactionhistory.objects.filter(sender=commonuser, created_date__date=today.date())
+                    lifetime_transactions = GiftTransactionhistory.objects.filter(sender=commonuser)
+                    total_coins_dict[commonuser.Name]["coins"] += sum(transaction.amount for transaction in received_transactions)
+                    total_coins_dict[commonuser.Name]["total_coins"] = sum(transaction.amount for transaction in lifetime_transactions)
+
+                elif weekly is not None:
+                    # input_date_str = '26-01-2024'
+                    # input_date = datetime.strptime(input_date_str, '%d-%m-%Y')
+                    # last_week = input_date - timedelta(days=7)
+                    last_week = datetime.today() - timedelta(days=7)
+                    # utc_tz = pytz.timezone('UTC')
+                    # ist_tz = pytz.timezone('Asia/Kolkata')
+                    # last_week_utc = utc_tz.localize(last_week)
+
+                    # # Convert 'last_week_utc' to IST
+                    # last_week_ist = last_week_utc.astimezone(ist_tz)
+
+                    # # Print the converted datetime
+                    # # print("UTC:", last_week_utc)
+                    # print("IST:", last_week_ist)
+
+                    weekly_transactions = GiftTransactionhistory.objects.filter(sender=commonuser, created_date__gte=last_week)
+                    lifetime_transactions = GiftTransactionhistory.objects.filter(sender=commonuser)
+                    time_zones = [transaction.created_date.tzinfo for transaction in weekly_transactions]
+                    print(time_zones)
+                    total_coins_dict[commonuser.Name]["coins"] += sum(transaction.amount for transaction in weekly_transactions)
+                    total_coins_dict[commonuser.Name]["total_coins"] = sum(transaction.amount for transaction in lifetime_transactions)
+
+                elif month is not None:
+                    print("Monthly condition")
+                    current_month_start = timezone.now().month
+                    received_transactions = GiftTransactionhistory.objects.filter(sender=commonuser, created_date__month=current_month_start)
+                    lifetime_transactions = GiftTransactionhistory.objects.filter(sender=commonuser)
+                    total_coins_dict[commonuser.Name]["coins"] += sum(transaction.amount for transaction in received_transactions)
+                    total_coins_dict[commonuser.Name]["total_coins"] = sum(transaction.amount for transaction in lifetime_transactions)
+
+                else:
+                    print("Lifetime condition")
+                    received_transactions = GiftTransactionhistory.objects.filter(sender=commonuser)
+                    total_coins_dict[commonuser.Name]["total_coins"] = sum(transaction.amount for transaction in received_transactions)
+
+                    sorted_transactions = received_transactions.order_by('-created_date')
+
+                    for transaction in sorted_transactions:
+                        from_user_name = transaction.sender.Name
+                        coins = transaction.amount
+                        if from_user_name in total_coins_dict:
+                            total_coins_dict[from_user_name]["coins"] += coins
+                        else:
+                            total_coins_dict[from_user_name] = {"coins": coins, "profile_picture": transaction.sender.profile_picture, "uid": transaction.sender.uid}
+            vip_data = sorted(
+                [{"Sender_user": user, "coins": data["coins"], "profile_picture": data["profile_picture"], "uid": data["uid"], "total_coins": data.get("total_coins", 0)} for user, data in total_coins_dict.items()],
+                key=lambda x: x["coins"],
+                reverse=True
+            )
+            return Response({"top_list_user": vip_data})
+
+        except GiftTransactionhistory.DoesNotExist:
+            return Response({'error': 'No transactions received by any user.'})
+
+        except Exception as e:
+            return Response({'error': str(e)})
+
+
+
+
+
+class Notification(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request,):
+        try:
+            user = Common.objects.get(uid=request.user.uid)
+            message_data = Notificationupdate.objects.filter(user=user)
+            transactions =  list(message_data)
+            transactions.sort(key=lambda x: x.created_at, reverse=True)
+            transaction_data = []
+            for data_transaction in transactions:
+                if isinstance(data_transaction, Notificationupdate):
+                        print(data_transaction.created_at.tzinfo)
+                        user_data = {
+                            # "User": serialize('json', [user])[58:65],
+                            "message": data_transaction.message,
+                            "created_date": data_transaction.created_at
+                        }
+                else: 
+                    continue
+                transaction_data.append(user_data)
+            return Response({"Transactions_History": transaction_data})
+        except Exception as e:
+            return Response({"erroe":str(e)})

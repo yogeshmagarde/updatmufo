@@ -14,15 +14,24 @@ urlpatterns = [
     path("usercoins/<int:id>", CoinTransfer31.as_view()),
     path("audiojoky/<int:id>", CoinTransfer4.as_view()),
     path("audiojoky/", CoinTransfer4.as_view()),
-    path("traderth/", cointraderTransactionHistoryView.as_view()),
-    path("clubownerth/", clubownerTransactionHistoryView.as_view()),
-    path("userth/", UserTransactionHistoryView.as_view()),
-    path("Audiojockeyth/", Audio_JockeyTransactionHistoryView.as_view()),
-    path("jokyclubownerth/", Jockey_club_ownerTransactionHistoryView.as_view()),
-    path("audiojockeytoplist/",Top_fans_listing_globle_View.as_view()),
-    path("listofAudioJockey/", listofAudioJockey.as_view()),
-    path("alluserpurchasehistory", AllUserpurchaseHistoryView.as_view()),
-          
+    # path("traderth/", cointraderTransactionHistoryView.as_view()),
+    # path("clubownerth/", clubownerTransactionHistoryView.as_view()),
+    # path("userth/", UserTransactionHistoryView.as_view()),
+    # path("Audiojockeyth/", Audio_JockeyTransactionHistoryView.as_view()),
+    
+    path("clubownerpurchaseth/", clubownerpurchaseTransactionHistoryView.as_view()),
+    path("clubownerspendth/", clubownespendTransactionHistoryView.as_view()),
+    path("traderpurchaseth/", CointraderpurchaseTransactionHistoryView.as_view()),
+    path("traderspendth/", CointraderspendTransactionHistoryView.as_view()),
+    path("userspendth/", UserspendTransactionHistoryView.as_view()),
+    path("userpurchseth/", UserpurchaseTransactionHistoryView.as_view()),
+    path("Audiojockeypurchseth/", Audio_JockeypurchaseTransactionHistoryView.as_view()),
+    path("Audio_Jockey_and_Jockey_club_owner/", Audio_Jockey_and_Jockey_club_owner_spendTransactionHistoryView.as_view()),
+    path("jokyclubownerpurchaseth/", Jockey_club_ownerpurchaseTransactionHistoryView.as_view()),
 
     
+    path("audiojockeytoplist/",Top_fans_listing_globle_View.as_view()),
+    path("listofAudioJockey/", listofAudioJockey.as_view()),
+    path("alluserpurchasehistory/", AllUserpurchaseHistoryView.as_view()),
+          
 ]

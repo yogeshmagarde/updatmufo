@@ -87,7 +87,9 @@ class Notificationupdate(models.Model):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    def __str__(self):
+        return str(self.user)+""+str(self.created_at)
+    
     def save(self, user_group_name=None, *args, **kwargs):
         # print('saving notificationi')
         channel_layer = get_channel_layer()

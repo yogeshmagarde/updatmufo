@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from django.core.serializers import serialize
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -215,20 +215,22 @@ class CoinTransfer4(APIView):
             return Response({'error': 'Please provide a valid Audio_Jockey ID.'}, status=status.HTTP_400_BAD_REQUEST)
 # transaction history
 
-class clubownerTransactionHistoryView(APIView):
+
+class clubownerpurchaseTransactionHistoryView(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, id=None):
         try:
-            user1 = Common.objects.get(uid=request.user.uid)
-            followclaim = Coins_club_owner_Follow_claim.objects.filter(user=user1)
+            Commn_user = Common.objects.get(uid=request.user.uid)
             club_owner = Coins_club_owner.objects.get(uid=request.user.uid)
-            purchase = Purchase_history.objects.filter(user=user1)
+            followclaim = Follow_claim_coins.objects.filter(user=Commn_user)
+            purchase = Purchase_history.objects.filter(user=Commn_user)
             daliylgin  = Coinsclubownerdaliylogin.objects.filter(user=club_owner)
+            receivegift = GiftTransactionhistory.objects.filter(receiver=Commn_user)
             received_from_admin = Admin_to_Coins_club_owner.objects.filter(Coins_Club_Owner_Id=club_owner)
-            sent_to_trader = Coins_club_owner_to_Coins_trader.objects.filter(from_owner=club_owner)
-            all_transactions = list(received_from_admin) + list(sent_to_trader) + list(followclaim) + list(purchase)  + list(daliylgin)
+            all_transactions = list(received_from_admin) + list(receivegift) + list(followclaim) + list(purchase)  + list(daliylgin)
             all_transactions.sort(key=lambda x: x.created_date, reverse=True)
             transaction_data = []
+            Bonus_coins = 10 
             for transaction in all_transactions:
                 if isinstance(transaction, Admin_to_Coins_club_owner):
                     transaction_type = "Received from Admin"
@@ -239,107 +241,113 @@ class clubownerTransactionHistoryView(APIView):
                         "amount": transaction.numcoin,
                         "created_date": transaction.created_date
                     }
-                elif isinstance(transaction, Coins_club_owner_to_Coins_trader):
-                    transaction_type = "Paid to Cointrader"
-                    to_trader = transaction.to_trader.Name  
+                elif isinstance(transaction, Follow_claim_coins):
                     data = {
-                        "transaction_type": transaction_type,
-                        "to_trader": to_trader,
-                        "amount": transaction.amount,
-                        "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, Coins_club_owner_Follow_claim):
-                    transaction_type = "Received from_follow_10_user"
-                    from_room = "Bonus coins"
-                    amount=10
-                    data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
+                    "transaction_type": "Received from_follow_10_user",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in receivegift: 
+                        data = {
+                            "transaction_type": f"Receive Gift as a {transaction.amount} coins! ",
+                            "Received_from": transaction.sender.Name,
+                            "created_date": transaction.created_date
+                        }
                 elif isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = "You get 1000 coins on recharge of Rs 100"
-                    amount=10000
                     data = {
-                        "transaction_type": transaction_type,
-                        "today_claim": from_claim,
-                        "amount": amount,  
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
                         "created_date": transaction.created_date
                         }
                 elif isinstance(transaction, Coinsclubownerdaliylogin):
-                    transaction_type = "Received from_today_claim"
-                    from_claim = "Bonus coins"
-                    amount=10
                     data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
+                    "transaction_type": "Received from_today_claim",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
                 else: 
                     continue
                 transaction_data.append(data)
-            return Response({"Transactions_History": transaction_data})
-        except Coins_club_owner.DoesNotExist:
-            return Response({'error': 'Club owner not found.'})
-        except Admin_to_Coins_club_owner.DoesNotExist:
-            return Response({'error': 'No transactions received from admin.'})
-        except Coins_club_owner_to_Coins_trader.DoesNotExist:
-            return Response({'error': 'No transactions sent to trader.'})
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
         except Exception as e:
-            return Response({'error': e})
+            return Response({'error': f'{e}.'})
+        
+
+class clubownespendTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            club_owner = Coins_club_owner.objects.get(uid=request.user.uid)
+            send = Coins_club_owner_to_Coins_trader.objects.filter(from_owner=club_owner)
+            sendgift = GiftTransactionhistory.objects.filter(sender=Commn_user)
+            all_transactions = list(sendgift) + list(send)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = []
+            for transaction in all_transactions:
+                if isinstance(transaction, Coins_club_owner_to_Coins_trader):
+                    data = {
+                        "transaction_type": "Paid to Cointrader",
+                        "to_trader": transaction.to_trader.Name ,
+                        "amount": transaction.amount,
+                        "created_date": transaction.created_date
+                    }
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in sendgift:
+                        data = {
+                            "transaction_type": f"Send Gift as a {transaction.amount} coins! ",
+                            "send_to": transaction.receiver.Name,
+                            "created_date": transaction.created_date
+                            }
+               
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
 
 
 
-class cointraderTransactionHistoryView(APIView):
+class CointraderpurchaseTransactionHistoryView(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, id=None):
         try:   
             trader = Coins_trader.objects.get(uid=request.user.uid)
-            user1 = Common.objects.get(uid=request.user.uid)
-            followclaim = Coins_trader_Follow_claim.objects.filter(user=user1)
-            purchase = Purchase_history.objects.filter(user=user1)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            followclaim = Follow_claim_coins.objects.filter(user=Commn_user)
+            purchase = Purchase_history.objects.filter(user=Commn_user)
             daliylgin  = Coins_traderdaliylogin.objects.filter(user=trader)
             received = Coins_club_owner_to_Coins_trader.objects.filter(to_trader=trader)
-            sent_Jockey_club_owner = Coins_trader_to_Jockey_club_owner.objects.filter(from_trader=trader)
-            sent_user = Coins_trader_to_User.objects.filter(from_trader=trader)
-
-            all_transactions = list(received) + list(sent_Jockey_club_owner) + list(sent_user) + list(purchase) + list(followclaim) + list(daliylgin)
+            receivegift = GiftTransactionhistory.objects.filter(receiver=Commn_user)
+            all_transactions = list(received) + list(purchase) + list(followclaim) + list(daliylgin) + list(receivegift)
             all_transactions.sort(key=lambda x: x.created_date, reverse=True)
             transaction_data = []
+            Bonus_coins = 10
             for transaction in all_transactions:
-                if isinstance(transaction, Coins_trader_Follow_claim):
-                    transaction_type = "Received from_follow_10_user"
-                    from_room = "Bonus coins"
-                    amount=10
+                if isinstance(transaction, Follow_claim_coins):
                     data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
+                    "transaction_type": "Received from_follow_10_user",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
                 elif isinstance(transaction, Coins_traderdaliylogin):
-                    transaction_type = "Received from_today_claim"
-                    from_claim = "Bonus coins"
-                    amount=10
                     data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
+                    "transaction_type": "Received from_today_claim",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
-                elif isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = "You get 1000 coins on recharge of Rs 100"
-                    amount=10000
-                    data = {
-                        "transaction_type": transaction_type,
-                        "today_claim": from_claim,
-                        "amount": amount,  
-                        "created_date": transaction.created_date
-                        }
 
                 elif isinstance(transaction, Coins_club_owner_to_Coins_trader):
                     from_owner = transaction.from_owner.Name
@@ -350,293 +358,356 @@ class cointraderTransactionHistoryView(APIView):
                         "amount": transaction.amount,
                         "created_date": transaction.created_date
                     }
-                elif isinstance(transaction, Coins_trader_to_Jockey_club_owner):  
-                    transaction_type = "Paid to Jockey_club_owner"
-                    to_Jockey_club_owner = transaction.to_Jockey_club_owner.Name  
-                    data = {
-                        "transaction_type": transaction_type,
-                        "to_Jockey_club_owner": to_Jockey_club_owner,
-                        "amount": transaction.amount,
-                        "created_date": transaction.created_date
-                    }     
-                elif isinstance(transaction, Coins_trader_to_User):
-                    transaction_type = "Paid to User"
-                    to_User = transaction.to_User.Name  
-                    data = {
-                        "transaction_type": transaction_type,
-                        "to_User": to_User,
-                        "amount": transaction.amount,
-                        "created_date": transaction.created_date
-                    }
-
-                    
-                else: 
-                    continue
-                transaction_data.append(data)
-            return Response({"Transactions_History": transaction_data})
-        except Coins_trader.DoesNotExist:
-            return Response({'error': 'Club owner not found.'})
-        except Coins_club_owner_to_Coins_trader.DoesNotExist:
-            return Response({'error': 'No transactions received from admin.'})
-        except Coins_trader_to_Jockey_club_owner.DoesNotExist:
-            return Response({'error': 'No transactions sent to trader.'})
-
-
-
-
-class Jockey_club_ownerTransactionHistoryView(APIView):
-    @method_decorator(authenticate_token)
-    def get(self, request, id=None):
-        try:
-            jockeyclubowner = Jockey_club_owner.objects.get(uid=request.user.uid)
-            user1 = Common.objects.get(uid=request.user.uid)
-            followclaim = Jockey_club_owner_Follow_claim.objects.filter(user=user1)
-            purchase = Purchase_history.objects.filter(user=user1)
-            daliylgin  = Jockeyclubownerlogin.objects.filter(user=jockeyclubowner)
-            received = Coins_trader_to_Jockey_club_owner.objects.filter(to_Jockey_club_owner=jockeyclubowner)
-            all_transactions = list(received) + list(purchase) + list(followclaim) + list(daliylgin)
-            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
-            transaction_data = []
-            for transaction in all_transactions:
-                if isinstance(transaction, Coins_trader_to_Jockey_club_owner):     
-                    from_trader = transaction.from_trader.Name
-                    transaction_type = "Received from Cointrader"
-                    data = {
-                        "transaction_type": transaction_type,
-                        "from_trader": from_trader,
-                        "amount": transaction.amount,
-                        "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction,  Jockey_club_owner_Follow_claim):
-                    transaction_type = "Received from_follow_10_user"
-                    from_room = "Bonus coins"
-                    amount=10
-                    data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
-                    "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, Jockeyclubownerlogin):
-                    transaction_type = "Received from_today_claim"
-                    from_claim = "Bonus coins"
-                    amount=10
-                    data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
-                    "created_date": transaction.created_date
-                    }
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in receivegift: 
+                        data = {
+                            "transaction_type": f"Receive Gift as a {transaction.amount} coins! ",
+                            "Received_from": transaction.sender.Name,
+                            "created_date": transaction.created_date
+                        }
                 elif isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = "You get 1000 coins on recharge of Rs 100"
-                    amount=10000
                     data = {
-                        "transaction_type": transaction_type,
-                        "today_claim": from_claim,
-                        "amount": amount,  
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
                         "created_date": transaction.created_date
                         }
                 else: 
                     continue
                 transaction_data.append(data)
-            return Response({"Transactions_History": transaction_data})
-        except Jockey_club_owner.DoesNotExist:
-            return Response({'error': 'Jockey_club_owner not found.'})
-        except Coins_trader_to_Jockey_club_owner.DoesNotExist:
-            return Response({'error': 'No transactions received from CoinTrader.'})
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
         except Exception as e:
-            return Response({'error': 'Please provide a valid Jockey_club_owner.'})
-               
+            return Response({'error': f'{e}.'})
+        
 
-class Audio_JockeyTransactionHistoryView(APIView):
+class CointraderspendTransactionHistoryView(APIView):
     @method_decorator(authenticate_token)
     def get(self, request, id=None):
-        try: 
-            audiojockey = Audio_Jockey.objects.get(uid=request.user.uid)
-            user1 = Common.objects.get(uid=request.user.uid)
-            followclaim = Audio_JockeyFollow_claim.objects.filter(user=user1)
-            received = User_to_Audio_Jockey.objects.filter(to_Audio_Jockey=audiojockey)
-            roomcreate = room_create_claim_coins.objects.filter(user=audiojockey)
-            purchase = Purchase_history.objects.filter(user=user1)
-            daliylgin  = Audiojockeyloigin.objects.filter(user=audiojockey)
-            all_transactions = list(received) + list(purchase) + list(followclaim) + list(daliylgin) + list(roomcreate)
+        try:   
+            trader = Coins_trader.objects.get(uid=request.user.uid)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            sendgift = GiftTransactionhistory.objects.filter(sender=Commn_user)
+            sent_Jockey_club_owner = Coins_trader_to_Jockey_club_owner.objects.filter(from_trader=trader)
+            sent_user = Coins_trader_to_User.objects.filter(from_trader=trader)
+            all_transactions = list(sent_Jockey_club_owner) + list(sent_user) + list(sendgift)
             all_transactions.sort(key=lambda x: x.created_date, reverse=True)
             transaction_data = []
             for transaction in all_transactions:
-                if isinstance(transaction, User_to_Audio_Jockey):     
-                    transaction_type = "Received from User"
-                    from_User = transaction.from_User.Name
+                if isinstance(transaction, Coins_trader_to_Jockey_club_owner):  
                     data = {
-                        "transaction_type": transaction_type,
-                        "from_User": from_User,
+                        "transaction_type": "Paid to Jockey_club_owner",
+                        "to_Jockey_club_owner": transaction.to_Jockey_club_owner.Name  ,
                         "amount": transaction.amount,
                         "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction,  Audio_JockeyFollow_claim):
-                    transaction_type = "Received from_follow_10_user"
-                    from_room = "Bonus coins"
-                    amount=10
+                    }  
+                       
+                elif isinstance(transaction, Coins_trader_to_User): 
                     data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
-                    "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, Audiojockeyloigin):
-                    transaction_type = "Received from_today_claim"
-                    from_claim = "Bonus coins"
-                    amount=10
-                    data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
-                    "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, room_create_claim_coins):
-                    transaction_type = "Received from_room_create"
-                    from_claim = "Bonus coins"
-                    amount=10
-                    data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
-                    "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = "You get 1000 coins on recharge of Rs 100"
-                    amount=10000
-                    data = {
-                        "transaction_type": transaction_type,
-                        "today_claim": from_claim,
-                        "amount": amount,  
-                        "created_date": transaction.created_date
-                        }
-                else: 
-                    continue
-                transaction_data.append(data)
-            return Response({"Transactions_History": transaction_data})
-        except Audio_Jockey.DoesNotExist:
-            return Response({'error': 'Audio_Jockey not found.'})
-        except User_to_Audio_Jockey.DoesNotExist:
-            return Response({'error': 'No transactions received from User.'})
-        except Exception as e:
-            return Response({'error': 'Please provide a valid Audio_Jockey.'})
-               
-
-
-
-
-class UserTransactionHistoryView(APIView):
-    @method_decorator(authenticate_token)
-    def get(self, request, id=None):
-        try:
-            user = User.objects.get(uid=request.user.uid)
-            user1 = Common.objects.get(uid=request.user.uid)
-            purchase = Purchase_history.objects.filter(user=user1)
-            recevegift = GiftTransactionhistory.objects.filter(receiver=user1)
-            sendgift = GiftTransactionhistory.objects.filter(sender=user1)
-            follow_user_coins_received = Follow_claim_coins.objects.filter(user=user1)
-            room_join_received = room_join_claim_coins.objects.filter(user=user)
-            received = Coins_trader_to_User.objects.filter(to_User=user)
-            sent = User_to_Audio_Jockey.objects.filter(from_User=user)
-            claim_coins_received = claim_coins.objects.filter(user=user)
-            all_transactions = list(received) + list(sent) + list(follow_user_coins_received) + list(room_join_received) + list(claim_coins_received) + list(purchase)+ list(recevegift)+ list(sendgift)
-            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
-            transaction_data = []
-            for transaction in all_transactions:
-                if isinstance(transaction, Coins_trader_to_User):     
-                    transaction_type = "Received from Cointrader"
-                    from_trader = transaction.from_trader.Name  
-                    data = {
-                        "transaction_type": transaction_type,
-                        "from_trader": from_trader,
-                        "amount": transaction.amount,
-                        "created_date": transaction.created_date
-                    }
-                elif isinstance(transaction, User_to_Audio_Jockey):
-                    transaction_type = "Paid to Audio_Jockey"
-                    to_Audio_Jockey = transaction.to_Audio_Jockey.Name
-                    data = {
-                        "transaction_type": transaction_type,
-                        "to_Audio_Jockey": to_Audio_Jockey,
+                        "transaction_type": "Paid to User",
+                        "to_User": transaction.to_User.Name,
                         "amount": transaction.amount,
                         "created_date": transaction.created_date
                     }
                 elif isinstance(transaction, GiftTransactionhistory):
-                    if transaction in recevegift:
-                        transaction_type = f"Receive Gift as a {transaction.amount} coins! "
-                        sender = transaction.sender.Name
+                    if transaction in sendgift:
                         data = {
-                            "transaction_type": transaction_type,
-                            "Received_from": sender,
-                            # "amount": transaction.amount,
+                            "transaction_type": f"Send Gift as a {transaction.amount} coins! ",
+                            "send_to": transaction.receiver.Name,
+                            "created_date": transaction.created_date
+                            }
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+        
+
+class Jockey_club_ownerpurchaseTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            jockeyclubowner = Jockey_club_owner.objects.get(uid=request.user.uid)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            followclaim = Follow_claim_coins.objects.filter(user=Commn_user)
+            receivegift = GiftTransactionhistory.objects.filter(receiver=Commn_user)
+            purchase = Purchase_history.objects.filter(user=Commn_user)
+            daliylgin  = Jockeyclubownerlogin.objects.filter(user=jockeyclubowner)
+            received = Coins_trader_to_Jockey_club_owner.objects.filter(to_Jockey_club_owner=jockeyclubowner)
+            all_transactions = list(received) + list(purchase) + list(followclaim) + list(daliylgin) + list(receivegift)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = []
+            Bonus_coins = 10
+            for transaction in all_transactions:
+                if isinstance(transaction, Coins_trader_to_Jockey_club_owner):
+                    data = {
+                        "transaction_type":"Received from Cointrader",
+                        "from_trader": transaction.from_trader.Name,
+                        "amount": transaction.amount,
+                        "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction,  Follow_claim_coins):
+                    data = {
+                    "transaction_type": "Received from_follow_10_user",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
+                    "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, Jockeyclubownerlogin):
+                    data = {
+                    "transaction_type": "Received from_today_claim",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
+                    "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, Purchase_history):
+                    data = {
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
+                        "created_date": transaction.created_date
+                        }
+                    
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in receivegift: 
+                        data = {
+                            "transaction_type": f"Receive Gift as a {transaction.amount} coins! ",
+                            "Received_from": transaction.sender.Name,
                             "created_date": transaction.created_date
                         }
-                    elif transaction in sendgift:
-                        transaction_type = f"Send Gift as a {transaction.amount} coins! "
-                        receiver = transaction.receiver.Name
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+        
+        
+
+#Audio_Jockey
+class Audio_Jockey_and_Jockey_club_owner_spendTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try: 
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            sendgift = GiftTransactionhistory.objects.filter(sender=Commn_user)
+            all_transactions = list(sendgift)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = []
+            for transaction in all_transactions:
+                if isinstance(transaction, GiftTransactionhistory):
+                    if transaction in sendgift:
                         data = {
-                            "transaction_type": transaction_type,
-                            "send_to":receiver,
-                            # "amount": transaction.amount,
+                            "transaction_type": f"Send Gift as a {transaction.amount} coins! ",
+                            "send_to": transaction.receiver.Name,
+                            "created_date": transaction.created_date
+                            }
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+        
+
+class Audio_JockeypurchaseTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try: 
+            audiojockey = Audio_Jockey.objects.get(uid=request.user.uid)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            followclaim = Follow_claim_coins.objects.filter(user=Commn_user)
+            received = User_to_Audio_Jockey.objects.filter(to_Audio_Jockey=audiojockey)
+            roomcreate = room_create_claim_coins.objects.filter(user=audiojockey)
+            receivegift = GiftTransactionhistory.objects.filter(receiver=Commn_user)
+            purchase = Purchase_history.objects.filter(user=Commn_user)
+            daliylgin  = Audiojockeyloigin.objects.filter(user=audiojockey)
+            all_transactions = list(receivegift) + list(received) + list(purchase) + list(followclaim) + list(daliylgin) + list(roomcreate)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = []
+            Bonus_coins = 10
+            for transaction in all_transactions:
+                if isinstance(transaction, User_to_Audio_Jockey):     
+                    data = {
+                        "transaction_type": "Received from User",
+                        "from_User": transaction.from_User.Name,
+                        "amount": transaction.amount,
+                        "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction,  Follow_claim_coins):   #Follow_claim_coins
+                    data = {
+                    "transaction_type":"Received from_follow_10_user",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
+                    "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, Audiojockeyloigin):
+                    data = {
+                    "transaction_type":"Received from_today_claim",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
+                    "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, room_create_claim_coins):
+                    data = {
+                    "transaction_type": "Received from_room_create",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
+                    "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, Purchase_history):
+                    data = {
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
+                        "created_date": transaction.created_date
+                        }
+                    
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in receivegift: 
+                        data = {
+                            "transaction_type": f"Receive Gift as a {transaction.amount} coins! ",
+                            "Received_from": transaction.sender.Name,
+                            "created_date": transaction.created_date
+                        }
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+
+
+
+
+#USER_history        
+class UserspendTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            user = User.objects.get(uid=request.user.uid)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            sendgift = GiftTransactionhistory.objects.filter(sender=Commn_user)
+            sent = User_to_Audio_Jockey.objects.filter(from_User=user)
+            all_transactions = list(sent) + list(sendgift)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = [] 
+            for transaction in all_transactions:
+                if isinstance(transaction, User_to_Audio_Jockey):
+                    data = {
+                        "transaction_type": "Paid to Audio_Jockey",
+                        "to_Audio_Jockey": transaction.to_Audio_Jockey.Name,
+                        "amount": transaction.amount,
+                        "created_date": transaction.created_date
+                    }
+
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in sendgift:
+                        data = {
+                            "transaction_type": f"Send Gift as a {transaction.amount} coins! ",
+                            "send_to": transaction.receiver.Name,
+                            "created_date": transaction.created_date
+                            }
+                else: 
+                    continue
+                transaction_data.append(data)
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+
+
+
+class UserpurchaseTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            user = User.objects.get(uid=request.user.uid)
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            purchase = Purchase_history.objects.filter(user=Commn_user)
+            receivegift = GiftTransactionhistory.objects.filter(receiver=Commn_user)
+            follow_user_coins_received = Follow_claim_coins.objects.filter(user=Commn_user)
+            room_join_received = room_join_claim_coins.objects.filter(user=user)
+            received = Coins_trader_to_User.objects.filter(to_User=user)
+            claim_coins_received = claim_coins.objects.filter(user=user)
+            all_transactions = list(received) + list(follow_user_coins_received) + list(room_join_received) + list(claim_coins_received) + list(purchase)+ list(receivegift)
+            all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+            transaction_data = []
+            Bonus_coins = 10 
+            for transaction in all_transactions:
+                if isinstance(transaction, Coins_trader_to_User):       
+                    data = {
+                        "transaction_type": "Received from Cointrader",
+                        "from_trader": transaction.from_trader.Name,
+                        "amount": transaction.amount,
+                        "created_date": transaction.created_date
+                    }
+                elif isinstance(transaction, GiftTransactionhistory):
+                    if transaction in receivegift: 
+                        data = {
+                            "transaction_type": f"Receive Gift as a {transaction.amount} coins! ",
+                            "Received_from": transaction.sender.Name,
                             "created_date": transaction.created_date
                         }
                 elif isinstance(transaction, Follow_claim_coins):
-                    transaction_type = "Received from_follow_10_user"
-                    from_room = "Bonus coins"
-                    amount=10
                     data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
+                    "transaction_type": "Received from_follow_10_user",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
+
                 elif isinstance(transaction, room_join_claim_coins):
-                    transaction_type = "Received from_join_room"
-                    from_room = "Bonus coins"
-                    amount=10
                     data = {
-                    "transaction_type": transaction_type,
-                    "from_join_room": from_room,
-                    "amount": amount,  
+                    "transaction_type": "Received from_join_room",
+                    "from_join_room": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
+
                 elif isinstance(transaction, claim_coins):
-                    transaction_type = "Received from_today_claim"
-                    from_claim = "Bonus coins"
-                    amount=10
                     data = {
-                    "transaction_type": transaction_type,
-                    "today_claim": from_claim,
-                    "amount": amount,  
+                    "transaction_type": "Received from_today_claim",
+                    "today_claim": "Bonus coins",
+                    "amount": Bonus_coins,  
                     "created_date": transaction.created_date
                     }
                 elif isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = f"{transaction.claim_coins}"
-                    amount=transaction.claim_coins
                     data = {
-                        "transaction_type": transaction_type,
-                        # "today_claim": from_claim,
-                        "amount": amount,
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
                         "created_date": transaction.created_date
                         }
                 else: 
                     continue
                 transaction_data.append(data)
-            return Response({"Transactions_History": transaction_data})
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'})
-        except Coins_trader_to_User.DoesNotExist:
-            return Response({'error': 'No transactions received from cointrader.'})
-        except User_to_Audio_Jockey.DoesNotExist:
-            return Response({'error': 'No transactions sent to user.'})
+            if transaction_data:
+                return Response({'message':transaction_data})
+            else:
+                return Response({"Transactions_History": 'No transactions available.'})
         except Exception as e:
-            return Response({'error': 'Please provide a valid User.'})
-        
-
+            return Response({'error': f'{e}.'})
 
 
 class AllUserpurchaseHistoryView(APIView):
@@ -651,14 +722,11 @@ class AllUserpurchaseHistoryView(APIView):
             transaction_data = []
             for transaction in all_transactions:
                 if isinstance(transaction, Purchase_history):
-                    transaction_type = "Received from_Recharge"
-                    from_claim = "You get 1000 coins on recharge of Rs 100"
-                    amount=10000
                     data = {
-                        "transaction_type": transaction_type,
-                        "today_claim": from_claim,
-                        "amount": amount,  
-                        "created_date": transaction.created_date
+                        "transaction_type": "Received from_Recharge",
+                        "today_claim": transaction.claim_coins, 
+                        "created_date": transaction.created_date,
+                        "User": serialize('json', [user])[58:65],
                         }
                 else: 
                     continue

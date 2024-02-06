@@ -819,3 +819,281 @@ class listofAudioJockey(APIView):
 
 
 
+class TotalUserspendTransactionHistoryView(APIView):
+    @method_decorator(authenticate_token)
+    def get(self, request, id=None):
+        try:
+            Commn_user = Common.objects.get(uid=request.user.uid)
+            sendgift = GiftTransactionhistory.objects.filter(sender=Commn_user)
+            token=request.user
+            total_spent_coins = 0
+            username = ""
+            usertype = ""
+            profile_picture=""
+            if isinstance(token , User):
+                user = User.objects.get(uid=token.uid)
+                username = user.Name
+                usertype = user.usertype
+                profile_picture = user.profile_picture
+                sent = User_to_Audio_Jockey.objects.filter(from_User=user)
+                all_transactions = list(sent) + list(sendgift)
+                all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+                for transaction in all_transactions:
+                    if isinstance(transaction, User_to_Audio_Jockey):
+                        total_spent_coins += transaction.amount
+                    elif isinstance(transaction, GiftTransactionhistory):
+                        if transaction in sendgift:
+                            total_spent_coins += transaction.amount
+                    else: 
+                        continue
+            elif isinstance(token,Coins_trader):
+                trader = Coins_trader.objects.get(uid=request.user.uid)
+                username = trader.Name
+                usertype = trader.usertype
+                profile_picture = trader.profile_picture
+                sent_Jockey_club_owner = Coins_trader_to_Jockey_club_owner.objects.filter(from_trader=trader)
+                sent_user = Coins_trader_to_User.objects.filter(from_trader=trader)
+                all_transactions = list(sent_Jockey_club_owner) + list(sent_user) + list(sendgift)
+                all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+                for transaction in all_transactions:
+                    if isinstance(transaction, Coins_trader_to_Jockey_club_owner):   
+                        total_spent_coins += transaction.amount
+                    elif isinstance(transaction, Coins_trader_to_User): 
+                        total_spent_coins += transaction.amount
+                    elif isinstance(transaction, GiftTransactionhistory):
+                        if transaction in sendgift:
+                            total_spent_coins += transaction.amount
+                    else: 
+                        continue
+            elif isinstance(token, Audio_Jockey):
+                AudioJockey = Audio_Jockey.objects.get(uid=request.user.uid)
+                username = AudioJockey.Name
+                usertype = AudioJockey.usertype
+                profile_picture = AudioJockey.profile_picture
+                all_transactions = list(sendgift)
+                all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+                for transaction in all_transactions:
+                    if isinstance(transaction, GiftTransactionhistory):
+                        if transaction in sendgift:
+                            total_spent_coins += transaction.amount
+                    else: 
+                        continue
+            elif isinstance(token, Jockey_club_owner):
+                Jockey = Jockey_club_owner.objects.get(uid=request.user.uid)
+                username = Jockey.Name
+                usertype = Jockey.usertype
+                profile_picture = Jockey.profile_picture
+                all_transactions = list(sendgift)
+                all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+                for transaction in all_transactions:
+                    if isinstance(transaction, GiftTransactionhistory):
+                        if transaction in sendgift:
+                            total_spent_coins += transaction.amount
+                    else: 
+                        continue
+            elif isinstance(token,Coins_club_owner):
+                club_owner = Coins_club_owner.objects.get(uid=request.user.uid)
+                username = club_owner.Name
+                usertype = club_owner.usertype
+                profile_picture = club_owner.profile_picture
+                send = Coins_club_owner_to_Coins_trader.objects.filter(from_owner=club_owner)
+                all_transactions = list(sendgift) + list(send)
+                all_transactions.sort(key=lambda x: x.created_date, reverse=True)
+                for transaction in all_transactions:
+                    if isinstance(transaction, Coins_club_owner_to_Coins_trader):
+                        total_spent_coins += transaction.amount
+                    elif isinstance(transaction, GiftTransactionhistory):
+                        if transaction in sendgift:
+                            total_spent_coins += transaction.amount
+                    else: 
+                        continue
+            vip_level = self.determine_vip_level(total_spent_coins,token)
+            return Response({"username": username, "usertype": usertype,"profile_picture":profile_picture,"total_spend_coins":total_spent_coins,"vip_level": vip_level})
+        except Exception as e:
+            return Response({'error': f'{e}.'})
+        
+    def determine_vip_level(self, total_spent_coins,token):
+        vip=10
+        vip1=vip
+        vip2=vip*2
+        vip3=vip*3
+        vip4=vip*4
+        vip5=vip*5
+        vip6=vip*6
+        vip7=vip*7
+        vip8=vip*8
+        vip9=vip*9
+        vip10=vip*10
+        vip11=vip*11
+        # vip6_frame="https://plus.unsplash.com/premium_photo-1663840297018-fe653527fc32?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80"
+        if total_spent_coins >= vip11:
+                level = "vip11"
+                self.determine_frame_vip_level(level,token)
+                data={
+                        "VIP_level": "VIP11", 
+                        "Archive_level": "Congratulations! You have reached VIP level 11",
+                        "message":"you succsefully Archive all vip_levels"
+                        }
+                return data
+        elif total_spent_coins >= vip10:
+                left=vip11-total_spent_coins
+                level = "vip10"
+                self.determine_frame_vip_level(level,token)
+                next_level = f"You need {left} more coins to reach Next_VIP_level"
+                data={
+                        "VIP_level": "VIP10", 
+                        "Archive_level": "Congratulations! You have reached VIP level 10",
+                        "message":next_level
+                        }
+                return data
+        elif total_spent_coins >= vip9:
+            left=vip10-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_10"
+            level = "vip9"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP9", 
+                    "Archive_level": "Congratulations! You have reached VIP level 9",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip8:
+            left=vip9-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_9"
+            level = "vip8"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP8", 
+                    "Archive_level": "Congratulations! You have reached VIP level 8",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip7:
+            left=vip8-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_8"
+            level = "vip7"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP7", 
+                    "Archive_level": "Congratulations! You have reached VIP level 7",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip6:
+            left=vip7-total_spent_coins
+            level = "vip6"
+            next_level = f"You need {left} more coins to reach VIP_level_7"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP6", 
+                    "Archive_level": "Congratulations! You have reached VIP level 6",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip5:
+            left=vip6-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_6"
+            level = "vip5"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP5", 
+                    "Archive_level": "Congratulations! You have reached VIP level 5",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip4:
+            left=vip5-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_5"
+            level = "vip4"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP4", 
+                    "Archive_level": "Congratulations! You have reached VIP level 4",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip3:
+            left=vip4-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_4"
+            level = "vip3"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP3", 
+                    "Archive_level": "Congratulations! You have reached VIP level 3",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip2:
+            left=vip3-total_spent_coins
+            next_level = f"You need {left} more coins to reach VIP_level_3"
+            level = "vip2"
+            self.determine_frame_vip_level(level,token)
+            data={
+                    "VIP_level": "VIP2", 
+                    "Archive_level": "Congratulations! You have reached VIP level 2",
+                    "message":next_level
+                    }
+            return data
+        elif total_spent_coins >= vip1:
+           left=vip2-total_spent_coins
+           next_level = f"You need {left} more coins to reach VIP_level_2"
+           level = "vip1"
+           self.determine_frame_vip_level(level,token)
+           data={
+                    "VIP_level": "VIP1", 
+                    "Archive_level": "Congratulations! You have reached VIP level 1", 
+                    "message":next_level
+                    }
+           return data
+        else:
+            return "Regular"
+        
+    def determine_frame_vip_level(self,level,token):
+        if level == "vip11":
+            profile_frame = "vip11" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip10":
+            profile_frame = "vip10" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip9":
+            profile_frame = "vip9" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip8":
+            profile_frame = "vip8" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip7":
+            profile_frame = "vip7" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip6":
+            profile_frame = "vip6" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip5":
+            profile_frame = "vip5" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip4":
+            profile_frame = "vip4" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip3":
+            profile_frame = "vip3" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip2":
+            profile_frame = "vip2" #self.vip6_frame
+            self.frame_update(profile_frame,token)
+        elif level == "vip1":
+            profile_frame = "vip1" #self.vip6_frame
+            self.frame_update(profile_frame,token)       
+        
+        
+    def frame_update(self,profile_frame,token):
+            user = Common.objects.get(uid=token.uid)
+            user.profile_picture = profile_frame
+            user.save()
+            models=[User,Coins_club_owner,Coins_trader,Jockey_club_owner,Audio_Jockey]
+            for model in models:
+                if isinstance(token, model):
+                    user = model.objects.get(uid=token.uid)
+                    user.profile_picture = profile_frame
+                    user.save()
+
+
+   

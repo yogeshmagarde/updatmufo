@@ -29,6 +29,7 @@ urlpatterns = [
     path("Audio_Jockey_and_Jockey_club_owner/", Audio_Jockey_and_Jockey_club_owner_spendTransactionHistoryView.as_view()),
     path("jokyclubownerpurchaseth/", Jockey_club_ownerpurchaseTransactionHistoryView.as_view()),
 
+    path("allspend/",TotalUserspendTransactionHistoryView.as_view()),
     
     path("audiojockeytoplist/",Top_fans_listing_globle_View.as_view()),
     path("listofAudioJockey/", listofAudioJockey.as_view()),
